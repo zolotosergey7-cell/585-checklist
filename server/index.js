@@ -13,10 +13,12 @@ app.use(express.static(path.join(__dirname, '../public')));
 const authRoutes = require('./routes/auth');
 const checksRoutes = require('./routes/checks');
 const tasksRoutes = require('./routes/tasks');
+const uploadRoutes = require('./routes/upload');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/checks', checksRoutes);
 app.use('/api/tasks', tasksRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Все остальные запросы — отдаём index.html
 app.get('/{*path}', (req, res) => {

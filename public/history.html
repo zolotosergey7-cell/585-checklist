@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>585/GOLD — История проверок</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f5;color:#333;font-size:14px}
+.header{background:#f5a623;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.header-title{font-size:16px;font-weight:700}
+.header-sub{font-size:11px;opacity:.85;margin-top:2px}
+.btn-back{background:rgba(255,255,255,0.25);border:none;color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
+.content{padding:12px}
+.filter-bar{background:#fff;border-radius:10px;padding:12px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.filter-label{font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;margin-bottom:6px}
+.filter-select{width:100%;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none}
+.filter-select:focus{border-color:#f5a623}
+.check-card{background:#fff;border-radius:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden;cursor:pointer}
+.check-card-header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+.check-card-left{}
+.check-store{font-weight:700;font-size:14px;color:#333;margin-bottom:4px}
+.check-date{font-size:11px;color:#aaa}
+.check-dgm{font-size:12px;color:#888;margin-top:2px}
+.check-score-box{text-align:center;min-width:60px}
+.check-score{font-size:24px;font-weight:800}
+.check-score.good{color:#4caf50}
+.check-score.mid{color:#f5a623}
+.check-score.bad{color:#e53935}
+.check-score-label{font-size:10px;color:#aaa}
+.check-stats{display:flex;gap:12px;padding:0 16px 12px;font-size:12px}
+.check-stat{display:flex;align-items:center;gap:4px}
+.check-body{display:none;border-top:1px solid #f0f0f0}
+.check-body.open{display:block}
+.tasks-section{padding:12px 16px}
+.tasks-title{font-weight:700;font-size:13px;color:#f5a623;text-transform:uppercase;margin-bottom:10px}
+.task-row{background:#f9f9f9;border:1.5px solid #eee;border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.task-row.new{border-left:4px solid #1976d2}
+.task-row.in_work{border-left:4px solid #f57c00}
+.task-row.pending_confirm{border-left:4px solid #7b1fa2}
+.task-row.closed{border-left:4px solid #4caf50}
+.task-text{font-size:13px;font-weight:600;margin-bottom:6px}
+.task-meta{font-size:11px;color:#aaa;margin-bottom:6px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:8px}
+.badge.new{background:#e3f2fd;color:#1976d2}
+.badge.in_work{background:#fff3e0;color:#f57c00}
+.badge.pending_confirm{background:#f3e5f5;color:#7b1fa2}
+.badge.closed{background:#e8f5e9;color:#4caf50}
+.task-actions{display:flex;gap:8px;margin-top:8px}
+.btn-confirm{padding:7px 16px;background:#4caf50;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-reject{padding:7px 16px;background:#e53935;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+.reject-input{width:100%;padding:8px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:12px;outline:none;margin-top:8px}
+.reject-input:focus{border-color:#e53935}
+.reject-note{background:#fff5f5;border:1px solid #ffcdd2;border-radius:8px;padding:8px 10px;font-size:12px;color:#e53935;margin-top:6px}
+.violations-section{padding:0 16px 12px}
+.violations-title{font-weight:700;font-size:13px;color:#e53935;text-transform:uppercase;margin-bottom:8px}
+.violation-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px}
+.violation-num{color:#aaa;min-width:24px;font-weight:600}
+.empty{text-align:center;padding:40px 20px;color:#aaa}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.loading{text-align:center;padding:40px;color:#aaa}
+.summary-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px 12px}
+.sum-box{text-align:center;padding:10px;border-radius:10px}
+.sum-box.g{background:#f0fdf4}.sum-box.r{background:#fff5f5}.sum-box.gr{background:#f5f5f5}
+.sum-n{font-size:20px;font-weight:800}
+.sum-n.g{color:#4caf50}.sum-n.r{color:#e53935}.sum-n.gr{color:#aaa}
+.sum-l{font-size:10px;color:#888}
+.no-tasks{padding:12px 16px;font-size:13px;color:#aaa;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">История проверок</div>
+    <div class="header-sub" id="headerSub"></div>
+  </div>
+  <button class="btn-back" onclick="goBack()">← Назад</button>
+</div>
+
+<div class="content">
+  <div class="filter-bar">
+    <div class="filter-label">Фильтр по магазину</div>
+    <select class="filter-select" id="storeFilter" onchange="filterChecks()">
+      <option value="">— Все магазины —</option>
+    </select>
+  </div>
+  <div id="checksList"><div class="loading">Загрузка...</div></div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token || user.role !== 'dgm') window.location.href = '/';
+
+document.getElementById('headerSub').textContent = `ТД ${user.td} | Филиал: ${user.filial}`;
+
+const BADGE = {
+  new: {label:'Новая', cls:'new'},
+  in_work: {label:'В работе', cls:'in_work'},
+  pending_confirm: {label:'Ожидает подтверждения ДГМ', cls:'pending_confirm'},
+  closed: {label:'Закрыта', cls:'closed'}
+};
+
+const SECTIONS = [
+  {title:'Внешний вид и территория', items:[1,2,3,4,5]},
+  {title:'Внутреннее оформление', items:[6,7,8,9,10,11,12,13,14,15]},
+  {title:'Персонал', items:[16,17,18,19,20,21]},
+  {title:'Качество обслуживания — магазин', items:[22,23,24,25,26,27,28,29,30,31,32,33,34]},
+  {title:'Качество обслуживания — ломбард', items:[35,36,37,38,39,40,41,42,43,44,45,46,47,48]},
+  {title:'Розница (документы)', items:[49,50,51,52,53]},
+  {title:'Ломбард (документы)', items:[54,55,56,57,58,59,60,61,62]},
+  {title:'Безопасность', items:[63,64,65,66,67,68,69,70,71,72,73,74]}
+];
+
+const ITEMS = {
+  1:'Вывеска 585/GOLD на фасаде — целая, чистая, с подсветкой',
+  2:'Фасад, окна, крыльцо в хорошем и безопасном состоянии',
+  3:'Прилегающая территория чистая, есть мусорная урна',
+  4:'Световые короба чистые, с подсветкой, актуальные рекламоносители',
+  5:'Режимы работы по всем ЮЛ',
+  6:'Торговый зал чистый, пол/стены/потолок не требуют ремонта',
+  7:'Торговое оборудование исправное, чистое, нет пыли/разводов/скотча',
+  8:'Потолочное освещение и освещение витрин исправно',
+  9:'Кассовая зона чистая: нет еды, аккуратные документы, информационные таблички',
+  10:'Передаточное окно товароведа в хорошем состоянии, указано ФИО',
+  11:'Наличие противопожарного оборудования и эвакуационных указателей',
+  12:'Выкладка по стандарту, 100% ценники, нет брака/пустых мест',
+  13:'Информация о текущих акциях, безналичном расчёте, кредите, плакаты',
+  14:'Уголок потребителей по всем ЮЛ, актуальный прейскурант, условия займов',
+  15:'Корпоративная звуковая дорожка играет / комфортный климат',
+  16:'Количество продавцов/товароведов соответствует штатному расписанию',
+  17:'Продавцы знают план по всем направлениям на день/неделю/месяц',
+  18:'Продавцы/товароведы знают о текущих акциях в рознице/ломбарде',
+  19:'Продавцы знают схему мотивации, могут рассчитать свою ЗП',
+  20:'Продавцы не занимаются посторонними делами в рабочее время',
+  21:'Внешний вид соответствует стандартам (шарф, бейдж, белая рубашка, классика)',
+  22:'Продавцы приветствуют клиентов, моментально реагируют',
+  23:'Выявляют потребность, задают наводящие вопросы, не теряют интереса',
+  24:'Презентуют Электронный каталог, предлагают заказ, рассказывают о преимуществах',
+  25:'При заказе по каталогу спрашивают о предоплате, оформляют Сертификат',
+  26:'Идентифицируют/регистрируют клиента в RTOM в начале диалога',
+  27:'Вносят все изделия интереса клиента в RTOM при демонстрации',
+  28:'Спрашивают e-mail при регистрации БК',
+  29:'Предлагают сопутствующие товары (футляры, чистящие средства), подбирают комплект',
+  30:'Информируют о возможности купить в кредит/рассрочку',
+  31:'Информируют об ОСН, знают актуальные тарифы приёма',
+  32:'Благодарят покупателя, не теряют интереса после завершения диалога',
+  33:'Продавцы прошли обучение, сдали тесты на учебном портале',
+  34:'Продавцы имеют пароли и доступы: касса/кредит/САП',
+  35:'Товаровед приветствует клиента, реагирует моментально',
+  36:'Выявляет потребность, консультирует по всем продуктам (ЮИ и технике)',
+  37:'Работает с документами, удостоверяющими личность, по регламенту',
+  38:'Оценка и оформление ссуды по действующим прейскурантам',
+  39:'Предлагает перевести ссуду на банковскую карту',
+  40:'Не отказывает в обслуживании, не перенаправляет к конкурентам',
+  41:'Информирует о сроках, сумме процентов и возможности перезалога',
+  42:'Информирует о перезалоге через личный кабинет',
+  43:'Оформляет выкуп/перезалог согласно регламентам',
+  44:'Запрашивает e-mail, вносит в карточку клиента',
+  45:'Приглашает контролёра при оформлении ЗБ свыше 40 000 ₽',
+  46:'Звонит в видеонаблюдение при оформлении ЗБ свыше 150 000 ₽',
+  47:'Товароведы прошли обучение, сдали тесты по ломбарду и технике ЮИ',
+  48:'Товароведы имеют пароли и доступы в САП',
+  49:'ДС в кассе соответствуют «Х»-отчёту, лимит кассы не более 10 000 ₽',
+  50:'Нет непринятых посылок (48 ч), неотправленного брака и товара в сейфе',
+  51:'Журнал учёта ЭТМЦ ведётся, подписи есть, выборочный пересчёт ≥500 изделий',
+  52:'Подписанные ДИ, КМО, ИМО, реестр ознакомления с приказами, факт обучения',
+  53:'Папки синего и красного кодов оформлены верно',
+  54:'Документация ломбарда и залоговые билеты соответствуют правилам',
+  55:'Подписи директора на ЗБ при сумме >40 000 ₽ и >150 000 ₽',
+  56:'Акты приёма-передачи смены между товароведами за последние 15 дней',
+  57:'Наличные в кассе ломбарда соответствуют акту приёма-передачи и кассовой книге SAP',
+  58:'Остаток ЗБ в кладовой соответствует акту приёма-передачи, порядок хранения соблюдён',
+  59:'Проверены изделия в залоге: ≥30% ЗБ (не менее 15, не более 120), все ЗБ >40 000 ₽',
+  60:'Нет неотправленных изделий (торги) с истёкшим сроком погашения',
+  61:'Подписанные ДИ, КМО, ИМО товароведа, реестр приказов, факт обучения',
+  62:'Папки синего и красного кодов оформлены верно',
+  63:'Накладные на внутренние перемещения (ТОРГ №13) с подписями МОЛ для всех ЮЛ',
+  64:'Журналы приёма/посылок для всех ЮЛ',
+  65:'Журнал внешних проверок ведётся',
+  66:'Браслет парогенератора надет на одного из сотрудников',
+  67:'Товаровед закрывает дверь ломбарда на ключ, ключей в замке нет',
+  68:'Сейфовая и сейфы закрыты на ключ, ключей в замке нет',
+  69:'Ключи от сейфов в недоступном для посторонних месте',
+  70:'Витрины, касса, калитка закрыты, запорные устройства исправны, витрины на сигнализации',
+  71:'Ключи от кассового ящика и витрин не на видных местах и не в замках',
+  72:'КТС у всего персонала, работоспособна, проверена утром, запись в журнале',
+  73:'Камеры видеонаблюдения работают, обзор достаточный, запись ведётся, сигнализация работает',
+  74:'Сейфы закрыты, нет ТМЦ/ДС вне сейфов, вместимость достаточна'
+};
+
+let allChecks = [];
+let tasksMap = {};
+
+async function load() {
+  try {
+    const [checksRes, tasksRes] = await Promise.all([
+      fetch('/api/checks', {headers:{'Authorization':'Bearer '+token}}),
+      fetch('/api/tasks', {headers:{'Authorization':'Bearer '+token}})
+    ]);
+    allChecks = await checksRes.json();
+    const tasks = await tasksRes.json();
+
+    // Группируем задачи по check_id
+    tasksMap = {};
+    tasks.forEach(t => {
+      if (!tasksMap[t.check_id]) tasksMap[t.check_id] = [];
+      tasksMap[t.check_id].push(t);
+    });
+
+    // Заполняем фильтр
+    const stores = [...new Set(allChecks.map(c => c.store).filter(Boolean))].sort();
+    const sel = document.getElementById('storeFilter');
+    stores.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      sel.appendChild(opt);
+    });
+
+    renderChecks(allChecks);
+  } catch(e) {
+    document.getElementById('checksList').innerHTML = '<div class="empty">Ошибка загрузки</div>';
+  }
+}
+
+function filterChecks() {
+  const store = document.getElementById('storeFilter').value;
+  const filtered = store ? allChecks.filter(c => c.store === store) : allChecks;
+  renderChecks(filtered);
+}
+
+function renderChecks(checks) {
+  if (!checks.length) {
+    document.getElementById('checksList').innerHTML = `
+      <div class="empty"><div class="empty-icon">📋</div>Проверок пока нет</div>`;
+    return;
+  }
+
+  document.getElementById('checksList').innerHTML = checks.map(c => {
+    const dt = new Date(c.created_at).toLocaleString('ru-RU');
+    const answers = c.answers || {};
+    const yes = Object.values(answers).filter(v=>v==='yes').length;
+    const no = Object.values(answers).filter(v=>v==='no').length;
+    const pct = c.score_percent || 0;
+    const scoreClass = pct >= 80 ? 'good' : pct >= 60 ? 'mid' : 'bad';
+    const tasks = tasksMap[c.id] || [];
+    const pendingTasks = tasks.filter(t => t.status === 'pending_confirm').length;
+
+    return `<div class="check-card" id="card_${c.id}">
+      <div class="check-card-header" onclick="toggleCard(${c.id})">
+        <div class="check-card-left">
+          <div class="check-store">${c.store || '—'}</div>
+          <div class="check-date">📅 ${dt}</div>
+          <div class="check-dgm">ДГМ: ${c.dgm_name || '—'}</div>
+          ${pendingTasks > 0 ? `<div style="color:#7b1fa2;font-size:11px;font-weight:700;margin-top:4px">⏳ ${pendingTasks} задач ожидают подтверждения</div>` : ''}
+        </div>
+        <div class="check-score-box">
+          <div class="check-score ${scoreClass}">${pct}%</div>
+          <div class="check-score-label">результат</div>
+        </div>
+      </div>
+      <div class="check-body" id="body_${c.id}">
+        <div class="summary-bar">
+          <div class="sum-box g"><div class="sum-n g">${yes}</div><div class="sum-l">Соответствует</div></div>
+          <div class="sum-box r"><div class="sum-n r">${no}</div><div class="sum-l">Нарушений</div></div>
+          <div class="sum-box gr"><div class="sum-n gr">${74-yes-no}</div><div class="sum-l">Не проверено</div></div>
+        </div>
+        ${renderViolations(answers, c.comments)}
+        ${renderTasks(tasks, c.id)}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderViolations(answers, comments) {
+  const violations = Object.entries(answers)
+    .filter(([,v]) => v === 'no')
+    .map(([n]) => ({n: parseInt(n), text: ITEMS[n]}));
+
+  if (!violations.length) return '';
+
+  return `<div class="violations-section">
+    <div class="violations-title">❌ Нарушения (${violations.length})</div>
+    ${violations.map(v => {
+      const comm = comments && comments[v.n] ? `<div style="color:#888;font-size:11px;margin-top:2px">💬 ${comments[v.n]}</div>` : '';
+      return `<div class="violation-row">
+        <span class="violation-num">${v.n}.</span>
+        <div><div>${v.text}</div>${comm}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function renderTasks(tasks, checkId) {
+  if (!tasks.length) return `<div class="no-tasks">Задач по этой проверке нет</div>`;
+
+  return `<div class="tasks-section">
+    <div class="tasks-title">📋 Задачи (${tasks.length})</div>
+    ${tasks.map(t => {
+      const b = BADGE[t.status] || BADGE.new;
+      const canConfirm = t.status === 'pending_confirm';
+      const rejectNote = t.reject_comment
+        ? `<div class="reject-note">Возвращено с комментарием: ${t.reject_comment}</div>` : '';
+      return `<div class="task-row ${t.status}" id="task_${t.id}">
+        <span class="badge ${b.cls}">${b.label}</span>
+        <div class="task-text">${t.text}</div>
+        <div class="task-meta">${t.deadline ? '📅 Срок: '+t.deadline : ''} ${t.auto ? '| ⚡ По нарушению' : ''}</div>
+        ${rejectNote}
+        ${canConfirm ? `
+          <div class="task-actions">
+            <button class="btn-confirm" onclick="confirmTask(${t.id}, ${checkId})">✓ Подтвердить</button>
+            <button class="btn-reject" onclick="showReject(${t.id}, ${checkId})">✗ Вернуть</button>
+          </div>
+          <div id="reject_${t.id}" style="display:none">
+            <input class="reject-input" id="reject_text_${t.id}" placeholder="Причина возврата...">
+            <div class="task-actions" style="margin-top:8px">
+              <button class="btn-reject" onclick="rejectTask(${t.id}, ${checkId})">Отправить</button>
+            </div>
+          </div>` : ''}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function toggleCard(id) {
+  const body = document.getElementById('body_' + id);
+  body.classList.toggle('open');
+}
+
+async function confirmTask(taskId, checkId) {
+  try {
+    const res = await fetch('/api/tasks/'+taskId+'/confirm', {
+      method:'PATCH',
+      headers:{'Authorization':'Bearer '+token}
+    });
+    if (res.ok) {
+      // Обновляем локально
+      for (const arr of Object.values(tasksMap)) {
+        const t = arr.find(t => t.id === taskId);
+        if (t) { t.status = 'closed'; break; }
+      }
+      const card = document.getElementById('task_' + taskId);
+      if (card) {
+        card.className = 'task-row closed';
+        card.querySelector('.badge').className = 'badge closed';
+        card.querySelector('.badge').textContent = 'Закрыта';
+        const actions = card.querySelector('.task-actions');
+        if (actions) actions.remove();
+      }
+    }
+  } catch(e) { alert('Ошибка'); }
+}
+
+function showReject(taskId) {
+  const div = document.getElementById('reject_' + taskId);
+  if (div) div.style.display = div.style.display === 'none' ? 'block' : 'none';
+}
+
+async function rejectTask(taskId, checkId) {
+  const comment = document.getElementById('reject_text_' + taskId)?.value.trim();
+  if (!comment) { alert('Введите причину возврата'); return; }
+  try {
+    const res = await fetch('/api/tasks/'+taskId+'/reject', {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({comment})
+    });
+    if (res.ok) {
+      for (const arr of Object.values(tasksMap)) {
+        const t = arr.find(t => t.id === taskId);
+        if (t) { t.status = 'in_work'; t.reject_comment = comment; break; }
+      }
+      const card = document.getElementById('task_' + taskId);
+      if (card) {
+        card.className = 'task-row in_work';
+        card.querySelector('.badge').className = 'badge in_work';
+        card.querySelector('.badge').textContent = 'В работе';
+        const actions = card.querySelector('.task-actions');
+        if (actions) actions.remove();
+        const rejectDiv = document.getElementById('reject_' + taskId);
+        if (rejectDiv) rejectDiv.remove();
+        card.insertAdjacentHTML('beforeend',
+          `<div class="reject-note">Возвращено с комментарием: ${comment}</div>`);
+      }
+    }
+  } catch(e) { alert('Ошибка'); }
+}
+
+function goBack() {
+  window.location.href = '/dgm.html';
+}
+
+load();
+</script>
+</body>
+</html>

@@ -63,6 +63,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f5;color:#333;font-
 .task-input:focus{border-color:#f5a623}
 .task-deadline{padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none}
 .btn-add-task{padding:9px 16px;background:#f5a623;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+.photo-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1.5px dashed #ccc;border-radius:8px;font-size:12px;color:#888;cursor:pointer;margin:0 0 10px}
+.photo-btn:hover{border-color:#f5a623;color:#f5a623}
+.photo-preview{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.photo-thumb{width:64px;height:64px;border-radius:8px;object-fit:cover;border:1px solid #ddd;cursor:pointer}
 .sign-block{background:#fff;border-radius:12px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden}
 .sign-header{padding:14px 16px;background:#f5f5f5;border-bottom:1px solid #eee}
 .sign-title{font-weight:700;font-size:14px;color:#555;text-transform:uppercase}
@@ -97,7 +101,10 @@ canvas{width:100%;height:150px;display:block;touch-action:none;cursor:crosshair;
     <div style="font-size:16px;font-weight:700">Чек-лист визита</div>
     <div class="header-sub" id="headerSub"></div>
   </div>
-  <button class="btn-logout" onclick="logout()">Выйти</button>
+   <div style="display:flex;gap:8px">
+    <button class="btn-logout" onclick="window.location.href='/history.html'">📋 История</button>
+    <button class="btn-logout" onclick="logout()">Выйти</button>
+  </div>
 </div>
 
 <div class="progress-wrap">
@@ -346,6 +353,9 @@ function buildSection(s) {
             <button class="btn-no" id="n_${i.n}" onclick="setAns(${i.n},'no')">✗ Нет</button>
           </div>
           <textarea class="check-comment" rows="2" placeholder="Комментарий..." oninput="comments[${i.n}]=this.value"></textarea>
+<label class="photo-btn" for="photo_${i.n}">📷 Добавить фото (макс. 3)</label>
+<input type="file" id="photo_${i.n}" style="display:none" accept="image/*" onchange="uploadPhoto(${i.n},this)">
+<div class="photo-preview" id="prev_${i.n}"></div>
         </div>`).join('')}
     </div>`;
   return div;
@@ -506,15 +516,16 @@ async function submitCheck() {
     document.getElementById('submitBtn').disabled = true;
     document.getElementById('submitBtn').textContent = 'Сохраняем...';
 
-    const res = await fetch('/api/checks', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body: JSON.stringify({
-        store, dgm_name:infoFields.dgm||'', df_name:infoFields.df||'',
-        sp_name:infoFields.sp||'', tovar_name:infoFields.tovar||'',
-        sellers_name:infoFields.sellers||'', answers, comments, score_percent:pct
-      })
-    });
+   const res = await fetch('/api/checks', {
+  method:'POST',
+  headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+  body: JSON.stringify({
+    store, dgm_name:infoFields.dgm||'', df_name:infoFields.df||'',
+    sp_name:infoFields.sp||'', tovar_name:infoFields.tovar||'',
+    sellers_name:infoFields.sellers||'', answers, comments, score_percent:pct,
+    photos
+  })
+});
     const data = await res.json();
     if(!res.ok) throw new Error(data.error);
 
@@ -538,7 +549,37 @@ async function submitCheck() {
     document.getElementById('submitBtn').textContent = 'Завершить проверку';
   }
 }
+const photos = {};
 
+async function uploadPhoto(n, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (photos[n] && photos[n].length >= 3) {
+    alert('Максимум 3 фото на пункт');
+    return;
+  }
+  const form = new FormData();
+  form.append('photo', file);
+  try {
+    const res = await fetch('/api/upload', {
+      method:'POST',
+      headers:{'Authorization':'Bearer '+token},
+      body: form
+    });
+    const data = await res.json();
+    if (!photos[n]) photos[n] = [];
+    photos[n].push(data.url);
+    const prev = document.getElementById('prev_' + n);
+    const img = document.createElement('img');
+    img.className = 'photo-thumb';
+    img.src = data.url;
+    img.onclick = () => window.open(data.url, '_blank');
+    prev.appendChild(img);
+  } catch(e) {
+    alert('Ошибка загрузки фото');
+  }
+  input.value = '';
+}
 function logout() {
   localStorage.clear();
   window.location.href = '/';
