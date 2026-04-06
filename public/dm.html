@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>585/GOLD — Директор магазина</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f5;color:#333;font-size:14px}
+.header{background:#f5a623;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.header-title{font-size:16px;font-weight:700}
+.header-sub{font-size:11px;opacity:.85;margin-top:2px}
+.btn-logout{background:rgba(255,255,255,0.25);border:none;color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
+.content{padding:12px}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tab{flex:1;padding:10px;background:#fff;border:1.5px solid #eee;border-radius:10px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;color:#888}
+.tab.active{background:#f5a623;color:#fff;border-color:#f5a623}
+.section{display:none}
+.section.active{display:block}
+.card{background:#fff;border-radius:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden}
+.card-header{padding:14px 16px;background:#fff3e0;border-bottom:1px solid #ffe0b2}
+.card-title{font-weight:700;font-size:14px;color:#f5a623}
+.card-body{padding:12px}
+.task-item{background:#f9f9f9;border:1.5px solid #eee;border-radius:10px;padding:12px;margin-bottom:8px}
+.task-item.new{border-left:4px solid #1976d2}
+.task-item.in_work{border-left:4px solid #f57c00}
+.task-item.pending_confirm{border-left:4px solid #7b1fa2}
+.task-item.closed{border-left:4px solid #388e3c;opacity:.7}
+.task-text{font-size:13px;font-weight:600;margin-bottom:6px}
+.task-meta{font-size:11px;color:#aaa;margin-bottom:8px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:8px}
+.badge.new{background:#e3f2fd;color:#1976d2}
+.badge.in_work{background:#fff3e0;color:#f57c00}
+.badge.pending_confirm{background:#f3e5f5;color:#7b1fa2}
+.badge.closed{background:#e8f5e9;color:#388e3c}
+.badge-labels{new:'Новая',in_work:'В работе',pending_confirm:'Ожидает подтверждения',closed:'Закрыта'}
+.btn-done{width:100%;padding:10px;background:#4caf50;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+.btn-done:hover{background:#43a047}
+.reject-note{background:#fff5f5;border:1px solid #ffcdd2;border-radius:8px;padding:10px;margin-top:8px;font-size:12px;color:#e53935}
+.empty{text-align:center;padding:40px 20px;color:#aaa;font-size:14px}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.check-card{background:#f9f9f9;border:1.5px solid #eee;border-radius:10px;padding:12px;margin-bottom:8px}
+.check-date{font-size:11px;color:#aaa;margin-bottom:4px}
+.check-score{font-size:22px;font-weight:800;color:#f5a623}
+.check-details{margin-top:8px}
+.check-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:12px}
+.loading{text-align:center;padding:40px;color:#aaa}
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.stat{background:#fff;border-radius:10px;padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.stat-n{font-size:24px;font-weight:800}
+.stat-n.blue{color:#1976d2}
+.stat-n.orange{color:#f57c00}
+.stat-n.green{color:#388e3c}
+.stat-l{font-size:11px;color:#888;margin-top:2px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">Мой магазин</div>
+    <div class="header-sub" id="headerSub"></div>
+  </div>
+  <button class="btn-logout" onclick="logout()">Выйти</button>
+</div>
+
+<div class="content">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('tasks')">📋 Задачи</div>
+    <div class="tab" onclick="switchTab('checks')">📊 Проверки</div>
+  </div>
+
+  <!-- TASKS -->
+  <div class="section active" id="tab-tasks">
+    <div id="statsRow" class="stats-row"></div>
+    <div id="tasksList"><div class="loading">Загрузка...</div></div>
+  </div>
+
+  <!-- CHECKS -->
+  <div class="section" id="tab-checks">
+    <div id="checksList"><div class="loading">Загрузка...</div></div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token || user.role !== 'dm') window.location.href = '/';
+
+document.getElementById('headerSub').textContent = user.store || user.login;
+
+const BADGE = {
+  new: {label:'Новая', cls:'new'},
+  in_work: {label:'В работе', cls:'in_work'},
+  pending_confirm: {label:'Ожидает подтверждения', cls:'pending_confirm'},
+  closed: {label:'Закрыта', cls:'closed'}
+};
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.className = 'tab' + ((['tasks','checks'][i]===tab)?' active':''));
+  document.querySelectorAll('.section').forEach(s => s.className = 'section');
+  document.getElementById('tab-'+tab).className = 'section active';
+  if(tab==='checks') loadChecks();
+}
+
+async function loadTasks() {
+  try {
+    const res = await fetch('/api/tasks', {
+      headers:{'Authorization':'Bearer '+token}
+    });
+    const tasks = await res.json();
+
+    // Stats
+    const newT = tasks.filter(t=>t.status==='new').length;
+    const inWork = tasks.filter(t=>t.status==='in_work').length;
+    const pending = tasks.filter(t=>t.status==='pending_confirm').length;
+    document.getElementById('statsRow').innerHTML = `
+      <div class="stat"><div class="stat-n blue">${newT}</div><div class="stat-l">Новых</div></div>
+      <div class="stat"><div class="stat-n orange">${inWork}</div><div class="stat-l">В работе</div></div>
+      <div class="stat"><div class="stat-n green">${pending}</div><div class="stat-l">На проверке</div></div>`;
+
+    if(!tasks.length) {
+      document.getElementById('tasksList').innerHTML = `
+        <div class="empty"><div class="empty-icon">✅</div>Задач нет</div>`;
+      return;
+    }
+
+    // Sort: new first, closed last
+    const order = {new:0,in_work:1,pending_confirm:2,closed:3};
+    tasks.sort((a,b)=>order[a.status]-order[b.status]);
+
+    document.getElementById('tasksList').innerHTML = tasks.map(t => {
+      const b = BADGE[t.status] || BADGE.new;
+      const canDone = t.status === 'new' || t.status === 'in_work';
+      const rejectNote = t.reject_comment ? `<div class="reject-note">❌ Отклонено: ${t.reject_comment}</div>` : '';
+      return `<div class="task-item ${t.status}">
+        <span class="badge ${b.cls}">${b.label}</span>
+        <div class="task-text">${t.text}</div>
+        <div class="task-meta">${t.deadline ? '📅 Срок: '+t.deadline : ''} ${t.auto ? '| ⚡ По нарушению' : ''}</div>
+        ${rejectNote}
+        ${canDone ? `<button class="btn-done" onclick="markDone(${t.id})">✓ Отметить выполненной</button>` : ''}
+      </div>`;
+    }).join('');
+
+  } catch(e) {
+    document.getElementById('tasksList').innerHTML = '<div class="empty">Ошибка загрузки задач</div>';
+  }
+}
+
+async function markDone(id) {
+  try {
+    const res = await fetch('/api/tasks/'+id+'/done', {
+      method:'PATCH',
+      headers:{'Authorization':'Bearer '+token}
+    });
+    if(res.ok) loadTasks();
+    else alert('Ошибка обновления задачи');
+  } catch(e) {
+    alert('Ошибка соединения');
+  }
+}
+
+async function loadChecks() {
+  try {
+    const res = await fetch('/api/checks', {
+      headers:{'Authorization':'Bearer '+token}
+    });
+    const checks = await res.json();
+
+    if(!checks.length) {
+      document.getElementById('checksList').innerHTML = `
+        <div class="empty"><div class="empty-icon">📋</div>Проверок пока нет</div>`;
+      return;
+    }
+
+    document.getElementById('checksList').innerHTML = checks.map(c => {
+      const dt = new Date(c.created_at).toLocaleString('ru-RU');
+      const answers = c.answers || {};
+      const yes = Object.values(answers).filter(v=>v==='yes').length;
+      const no = Object.values(answers).filter(v=>v==='no').length;
+      return `<div class="check-card">
+        <div class="check-date">📅 ${dt}</div>
+        <div class="check-score">${c.score_percent}%</div>
+        <div style="font-size:12px;color:#888;margin-top:2px">ДГМ: ${c.dgm_name||'—'}</div>
+        <div class="check-details">
+          <div class="check-row"><span>✅ Соответствует</span><span style="color:#4caf50;font-weight:700">${yes}</span></div>
+          <div class="check-row"><span>❌ Нарушений</span><span style="color:#e53935;font-weight:700">${no}</span></div>
+          <div class="check-row"><span>👤 СП</span><span>${c.sp_name||'—'}</span></div>
+        </div>
+      </div>`;
+    }).join('');
+
+  } catch(e) {
+    document.getElementById('checksList').innerHTML = '<div class="empty">Ошибка загрузки</div>';
+  }
+}
+
+function logout() {
+  localStorage.clear();
+  window.location.href = '/';
+}
+
+loadTasks();
+</script>
+</body>
+</html>

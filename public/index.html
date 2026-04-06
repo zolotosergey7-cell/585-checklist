@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>585/GOLD — Вход</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f5a623,#e8891a)}
+.box{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+.logo{text-align:center;margin-bottom:28px}
+.logo h1{font-size:32px;color:#f5a623;font-weight:800;letter-spacing:2px}
+.logo p{color:#888;font-size:13px;margin-top:4px}
+.group{margin-bottom:16px}
+.group label{display:block;font-size:11px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:6px}
+.group select,.group input{width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;outline:none;transition:border .2s}
+.group select:focus,.group input:focus{border-color:#f5a623}
+.btn{width:100%;padding:14px;background:#f5a623;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px}
+.btn:hover{background:#e8891a}
+.err{color:#e53935;font-size:13px;margin-top:10px;text-align:center;min-height:20px}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">
+    <h1>585 / GOLD</h1>
+    <p>Система проверки магазинов</p>
+  </div>
+  <div class="group">
+    <label>Роль</label>
+    <select id="role" onchange="onRole()">
+      <option value="">— Выберите роль —</option>
+      <option value="dgm">ДГМ — Директор группы магазинов</option>
+      <option value="dm">ДМ — Директор магазина</option>
+      <option value="td">ТД — Территориальный директор</option>
+      <option value="dfrs">ДФРС — Директор федеральной розничной сети</option>
+    </select>
+  </div>
+  <div id="fields" style="display:none">
+    <div class="group">
+      <label id="loginLabel">Логин</label>
+      <input type="text" id="login" placeholder="Введите логин" autocomplete="off">
+    </div>
+    <div class="group">
+      <label>Пароль</label>
+      <input type="password" id="pass" placeholder="585">
+    </div>
+    <button class="btn" onclick="doLogin()">Войти</button>
+  </div>
+  <div class="err" id="err"></div>
+</div>
+
+<script>
+function onRole() {
+  const r = document.getElementById('role').value;
+  document.getElementById('fields').style.display = r ? 'block' : 'none';
+  const labels = {
+    dgm: 'Название филиала (например: Самара)',
+    dm: 'Адрес магазина',
+    td: 'Логин ТД (например: тд-урал)',
+    dfrs: 'Логин (дфрс)'
+  };
+  document.getElementById('loginLabel').textContent = labels[r] || 'Логин';
+  document.getElementById('err').textContent = '';
+}
+
+async function doLogin() {
+  const role = document.getElementById('role').value;
+  const login = document.getElementById('login').value.trim();
+  const pass = document.getElementById('pass').value.trim();
+  const err = document.getElementById('err');
+  err.textContent = '';
+
+  if (!login) { err.textContent = 'Введите логин'; return; }
+  if (!pass) { err.textContent = 'Введите пароль'; return; }
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login, password: pass, role })
+    });
+    const data = await res.json();
+    if (!res.ok) { err.textContent = data.error || 'Ошибка входа'; return; }
+
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+
+    // Редирект по роли
+    if (role === 'dgm') window.location.href = '/dgm.html';
+    else if (role === 'dm') window.location.href = '/dm.html';
+    else window.location.href = '/analytics.html';
+
+  } catch(e) {
+    err.textContent = 'Ошибка соединения с сервером';
+  }
+}
+</script>
+</body>
+</html>

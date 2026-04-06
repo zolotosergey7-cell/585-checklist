@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>585/GOLD — ДГМ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f5;color:#333;font-size:14px}
+.header{background:#f5a623;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.header h2{font-size:16px;font-weight:700}
+.header-sub{font-size:11px;opacity:.85}
+.btn-logout{background:rgba(255,255,255,0.25);border:none;color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
+.progress-wrap{background:#fff;padding:12px 16px;border-bottom:1px solid #eee;position:sticky;top:60px;z-index:99}
+.progress-sections{display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap}
+.prog-sec{flex:1;min-width:30px;height:6px;border-radius:3px;background:#eee;cursor:pointer}
+.prog-sec.done{background:#4caf50}
+.prog-sec.partial{background:#ffcc02}
+.progress-text{font-size:11px;color:#888;text-align:right}
+.content{flex:1;padding:12px 12px 80px}
+.section-card{background:#fff;border-radius:12px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.section-header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.section-title{font-weight:700;font-size:14px;color:#f5a623;text-transform:uppercase}
+.section-score{font-size:12px;color:#888}
+.section-body{padding:0 12px 12px;display:none}
+.section-body.open{display:block}
+.info-block{padding:14px 0 0}
+.info-row{margin-bottom:10px}
+.info-label{font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;margin-bottom:4px}
+.info-input{width:100%;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none}
+.info-input:focus{border-color:#f5a623}
+.info-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.check-item{background:#f9f9f9;border:1.5px solid #eee;border-radius:10px;margin-bottom:8px;overflow:hidden}
+.check-item.yes{border-color:#4caf50;background:#f0fdf4}
+.check-item.no{border-color:#e53935;background:#fff5f5}
+.check-num{font-size:11px;color:#aaa;font-weight:600;padding:10px 12px 0}
+.check-text{padding:4px 12px 10px;font-size:13px;line-height:1.4}
+.check-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 10px}
+.btn-yes,.btn-no{padding:9px;border:1.5px solid #ddd;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;background:#fff}
+.btn-yes.active{background:#4caf50;border-color:#4caf50;color:#fff}
+.btn-no.active{background:#e53935;border-color:#e53935;color:#fff}
+.check-comment{width:calc(100% - 24px);margin:0 12px 10px;padding:8px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:12px;resize:none;outline:none;display:block}
+.check-comment:focus{border-color:#f5a623}
+.tasks-block{background:#fff;border-radius:12px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden}
+.tasks-header{padding:14px 16px;background:#fff3e0;border-bottom:1px solid #ffe0b2}
+.tasks-title{font-weight:700;font-size:14px;color:#f5a623;text-transform:uppercase}
+.tasks-body{padding:12px}
+.task-item{background:#f9f9f9;border:1.5px solid #eee;border-radius:10px;padding:10px 12px;margin-bottom:8px;position:relative}
+.task-text{font-size:13px;font-weight:600;margin-bottom:4px}
+.task-meta{font-size:11px;color:#aaa}
+.task-delete{position:absolute;top:8px;right:10px;background:none;border:none;color:#ccc;font-size:16px;cursor:pointer}
+.task-delete:hover{color:#e53935}
+.task-confirm-row{display:flex;gap:8px;margin-top:8px}
+.btn-confirm{padding:6px 14px;background:#4caf50;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-reject{padding:6px 14px;background:#e53935;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.status-new{background:#e3f2fd;color:#1976d2}
+.status-in_work{background:#fff3e0;color:#f57c00}
+.status-pending_confirm{background:#f3e5f5;color:#7b1fa2}
+.status-closed{background:#e8f5e9;color:#388e3c}
+.auto-tasks-btn{width:100%;padding:9px;background:#fff3e0;border:1.5px dashed #f5a623;border-radius:8px;color:#f5a623;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:10px}
+.task-input{width:100%;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none;margin-bottom:8px}
+.task-input:focus{border-color:#f5a623}
+.task-deadline{padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none}
+.btn-add-task{padding:9px 16px;background:#f5a623;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+.sign-block{background:#fff;border-radius:12px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden}
+.sign-header{padding:14px 16px;background:#f5f5f5;border-bottom:1px solid #eee}
+.sign-title{font-weight:700;font-size:14px;color:#555;text-transform:uppercase}
+canvas{width:100%;height:150px;display:block;touch-action:none;cursor:crosshair;background:#fafafa}
+.btn-clear{padding:8px 16px;background:#eee;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;margin:10px 12px}
+.result-block{background:#fff;border-radius:12px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:16px}
+.result-title{font-weight:700;font-size:14px;color:#f5a623;text-transform:uppercase;margin-bottom:12px}
+.result-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.stat-box{text-align:center;padding:12px 8px;border-radius:10px}
+.stat-box.g{background:#f0fdf4}.stat-box.r{background:#fff5f5}.stat-box.gr{background:#f5f5f5}
+.stat-num{font-size:28px;font-weight:800}
+.stat-num.g{color:#4caf50}.stat-num.r{color:#e53935}.stat-num.gr{color:#aaa}
+.stat-label{font-size:11px;color:#888;margin-top:2px}
+.result-pct{text-align:center;font-size:42px;font-weight:800;color:#f5a623;margin-bottom:4px}
+.result-pct-label{text-align:center;font-size:12px;color:#aaa;margin-bottom:12px}
+.sec-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;padding:10px 16px;z-index:100}
+.btn-submit{width:100%;padding:13px;background:#f5a623;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer}
+.btn-submit:disabled{background:#ccc;cursor:not-allowed}
+.success{display:none;position:fixed;inset:0;background:#f5f5f5;align-items:center;justify-content:center;text-align:center;padding:24px;z-index:999}
+.success-box{background:#fff;border-radius:16px;padding:40px;max-width:400px;box-shadow:0 4px 24px rgba(0,0,0,0.1)}
+.success-icon{font-size:64px;margin-bottom:16px}
+.success-title{font-size:22px;font-weight:800;color:#4caf50;margin-bottom:8px}
+.success-sub{color:#888;font-size:14px;margin-bottom:24px}
+.btn-new{padding:14px 32px;background:#f5a623;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div style="font-size:16px;font-weight:700">Чек-лист визита</div>
+    <div class="header-sub" id="headerSub"></div>
+  </div>
+  <button class="btn-logout" onclick="logout()">Выйти</button>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-sections" id="progBar"></div>
+  <div class="progress-text" id="progText">0 из 74 проверено</div>
+</div>
+
+<div class="content" id="content"></div>
+
+<div class="bottom-bar">
+  <button class="btn-submit" id="submitBtn" onclick="submitCheck()">Завершить проверку</button>
+</div>
+
+<div class="success" id="successScreen">
+  <div class="success-box">
+    <div class="success-icon">✅</div>
+    <div class="success-title">Проверка завершена!</div>
+    <div class="success-sub" id="successSub"></div>
+    <button class="btn-new" onclick="location.reload()">Новая проверка</button>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token || user.role !== 'dgm') window.location.href = '/';
+
+document.getElementById('headerSub').textContent = `ТД ${user.td} | Филиал: ${user.filial}`;
+
+const STORES_DATA = {
+  'Самара':['Самара, 4 проезд, 57, ТК Русь на Волге','Самара, Аэродромная, 40Б','Самара, Гагарина, 40/ Революционная, 90','Самара, Красноармейская, 121','Самара, Ленинградская, 27','Самара, Металлургов/Марии Авейде, 77/3','Самара, Победы, 123','Тольятти, Карла Маркса, 61','Саратов ул Барнаульская д. 34 пом. 19-20','Саратов, ул. им Тархова С. Ф., д. 29','Сызрань, ул. Красная, д. 5','Сызрань, Советская, 32','Балаково, Ленина, 76','Балаково, Трнавская, 23','Альметьевск, Герцена/Автовская 3В, ТК Корона'],
+  'Пенза':['Пенза, Кирова, 73, ТЦ ЦУМ','Пенза, Луначарского, 6','Пенза, Луначарского, 6 Б, подвал','Пенза, Московская, 100','Пенза, Победы, д 86А','Пенза, Строителей, 45, Космос Сити','Саранск, Веселовского 62а к.1','Саранск, Ленина, 3','Ульяновск, Гончарова, 23','Ульяновск, Гончарова, 24','Ульяновск, Камышинская, ост."Универсам"','Ульяновск, Рябикова, 60а','Ульяновск, Ульяновский, 14, ТК Универсам'],
+  'Уфа':['Уфа, 50-летия Октября, 5','Уфа, Ахметова, 326, ТК Заречный','Уфа, Мубарякова, 10/1','Уфа, Первомайская, 36','Уфа, Ухтомского, 16','Стерлитамак, Коммунистическая, 38','Туймазы, Ленина, 2','Мелеуз, Ленина, 133','Салават, Островского, 21','Оренбург, Володарского, 37','Оренбург, Новая, 4, ТК Гулливер','Оренбург, Салмышская, 74, пом 1','Орск, Ленина, 24'],
+  'Казань':['Казань, ул.Вишневского, д.51, пом.1010','Казань, Восстания, 29','Казань, Даурская, 40','Казань, Декабристов, 187','Казань, Зорге, 95, ТК Ярань','Казань, Мартына Межлаука, 16','Казань, Сибирский Тракт, 11','Казань, Четаева, 35, пом.1045','Казань, Шахиди, 1/15, ТК Столичный','Нижнекамск, Строителей, 2Ж','Набережные Челны, Мира, 3','Набережные Челны, Московский, 128а','Набережные Челны, Энтузиастов, 16'],
+  'Чебоксары':['Нижний Новгород, Дьяконова, 23','Нижний Новгород, Лескова, 2','Иваново, ул. Куконковых, д. 141','Иваново, Ленина, 47','Иваново, Ленина, 7','Иваново, Лежневская, 142','Рязань, Гагарина, 75','Рязань, Есенина, 37/2','Рязань, ул. Ленина, д.4','Рязань, Первомайский, 47/1','Рязань, Первомайский, 7','Йошкар-Ола, Чавайна, 41','Медведево, Юбилейная, 3а','Новочебоксарск, Винокурова, 57','Чебоксары, Калинина, 105','Чебоксары, Ленинградская, 27','Чебоксары, Привокзальная, 8','Чебоксары, Университетская, 10','Чебоксары, Университетская, 22'],
+  'Краснодар':['Азов, Мира, 24','Батайск, Энгельса, 215/5','Белая Калитва, Калинина, 7','Ейск, Победы, 76/2','Каменск-Шахтинский, Советская, 91','Каменск-Шахтинский, Торговый, 5','Краснодар, Герцена, 190','Краснодар, ул. Красных Партизан, д. 1/4','Краснодар, Уральская, 102','Новая Адыгея, Тургеневское ш., 31','Новотитаровская, ул Ленина, д. 171','Новошахтинск, ул. Базарная, д. 10','Таганрог, Гоголевский, 14','Усть-Лабинск, Октябрьская, 116','Шахты, Шевченко. д. 125','Яблоновский, ул Промышленная, д 9'],
+  'Ставрополь':['Александровское ул. Карла Маркса 84','Армавир, Мира, 24-в','Армавир, Кирова, 51','Кропоткин, ул. Базарная, д. 71/15','Кропоткин, Красная 174.7','Лабинск, Константинова, 13','Невинномысск, Гагарина 10','Ставрополь, 50 лет ВЛКСМ, 16','Ставрополь, пр. К. Маркса, 63','Ставрополь, Пушкина, 40','Ставрополь, ул. Родосская, д. 13','Черкесск, Кавказская, 30','Черкесск, Кавказская, 37','Черкесск, Ленина, 56'],
+  'Сочи':['Абинск, Советов, 45','Анапа, Красноармейская 13а','Анапа, Лермонтова 131','Белореченск, Красная, 67','Геленджик, Кирова, 60а','Майкоп, Пролетарская, 210','Майкоп, Чкалова, 71','Новороссийск, Дзержинского 174/39','Новороссийск, Бирюзова, 3','Сочи, Лесной, 27','Сочи, Московская, 11а','Сочи, Навагинская, 1/7','Туапсе, Карла Маркса, 25/15'],
+  'Северный Кавказ':['Буденновск, Свободы, 219','Владикавказ, Владикавказская, 28','Владикавказ, Джанаева, 55/2','Владикавказ, Куйбышева, 21','Владикавказ, Николаева, 19','Ессентуки, Гагарина, 95','Кисловодск, Горького, 31','Минеральные Воды, Ленина, 14/3','Минеральные Воды, Карла Маркса, 81а','Минеральные Воды, Терешковой 25','Нальчик, Ленина, 20','Нальчик, Толстого, 89-а','Нальчик, Шогенцукова, 16','Новопавловск, ул. Георгиевская','Прохладный, Пролетарская, 56'],
+  'Волгоград':['Астрахань, Интернациональная 3-Я, 31/114','Астрахань, Кирова, 12/10А','Астрахань, Победы, 53а','Астрахань, Свердл/Ногин, 97/2/96','Астрахань, Яблочкова/Маркина, 22/44','Волгоград, 51-й Гвардейской, 9','Волгоград, 64-й Армии, д.4','Волгоград, ул. Елецкая, д. 6а','Волгоград, Маршала Еременко, 130','Волгоград, Университетский, 25','Волгоград, Шурухина, 18','Михайловка, Обороны, 44/52','Элиста, 8 микрорайон, д. 4','Элиста, М.Горького, 18Б','Элиста, Горького, 32'],
+  'Пермь':['Березники, Пятилетки, 42','Пермь, 1905 года, 12','Пермь, Комсомольский, 60','Пермь, Крупской, 25','Пермь, Маршала Рыбалко, 32','Пермь, Мира, 41, ТРЦ Столица','Пермь, Парковый, 48','Пермь, Петропавловская, 60-1','Пермь, Писарева, 25','Чайковский, Карла Маркса, 50'],
+  'Екатеринбург 1':['Арамиль, 1 Мая, 69','Асбест, Ленина, 35','Березовский, Анучина, 4','Екатеринбург, 8 Марта, 150','Екатеринбург, Белинского, 169','Екатеринбург, Белореченская, 17','Екатеринбург, Блюхера, 39','Екатеринбург, Вайнера, 9а','Екатеринбург, Грибоедова, 20','Екатеринбург, Ленина, 70','Екатеринбург, Санаторная, 5','Екатеринбург, Челюскинцев, 19','Екатеринбург, Щорса, 29А','Екатеринбург, Щорса, 54','Каменск-Уральский, Суворова, 23а'],
+  'Екатеринбург 2':['Екатеринбург, Академика Парина, 46/5','Екатеринбург, Баумана, 1','Екатеринбург, Билимбаевская, 28','Екатеринбург, Космонавтов, 45','Екатеринбург, Краснолесья, 133','Екатеринбург, Пальмиро Тольятти, 30','Екатеринбург, Пехотинцев, 10','Екатеринбург, Победы, д 36','Екатеринбург, Старых Большевиков, 86','Екатеринбург, Шварца, 17','Краснотурьинск, Ленина, 42','Нижний Тагил, Вагоностроителей, 21','Нижний Тагил, Ленина, 71','Новоуральск, Комсомольская, 2'],
+  'Челябинск':['Копейск, Славы, 1','Курган, Куйбышева, д.72б','Курган, Ленина, 18','Магнитогорск 50 л Магнитки, 52Б','Магнитогорск, Карла Маркса, 93','Миасс, пр. Автозаводцев, д. 56','Челябинск, Воровского, 40','Челябинск, Дзержинского, 102','Челябинск, Комарова, 116','Челябинск, Комсомольский, 22','Челябинск, Ленина, 53','Челябинск, Солнечная, 40','Троицк, ул. Гагарина, д. 45','Шадринск, ул. Комсомольская, д. 24'],
+  'Тюмень':['Когалым, Мира, 2','Ноябрьск, ул Ленина, д 9','Пыть-Ях, мкрн.2 Нефтяников, 28','Сургут, Чехова ул., 1','Тюмень, Лагунова/Пермякова, ТК Солнечный','Тюмень, Ленина, 71','Тюмень, Мельникайте, 101/1','Тюмень, Мельникайте, 126','Тюмень, Мельникайте, 64','Тюмень, Мельникайте, 129/5','Тюмень, Республики, 174','Тюмень, Республики, 86/3','Тюмень, Тимофея Чаркова, 60','Тюмень, Ямская, 112'],
+  'Новосибирск':['Барнаул, Космонавтов, 6в','Барнаул, Ленина, 102','Барнаул, Юрина, Докучаевский ряд','Бердск, Красная Сибирь, 123','Бийск, Михаила Митрофанова, 37','Бийск, им.Героя Сов.Союза Васильева, 46','Новосибирск, ул. Дуси Ковальчук, д.89','Новосибирск, Карла Маркса, 3','Новосибирск, Красный проспект, д. 81','Новосибирск, Богдана Хмельницкого, 4','Новосибирск, Кирова, 113 Б','Новосибирск, Комсомольская, 23а/1','Новосибирск, Рассветная, 11 б','Новосибирск, Станиславского, 14','Толмачево, Победы, 1а','Чита, Онискевича, 21','Якутск, Дзержинского, 32'],
+  'Кемерово':['Белово, ул. Юбилейная, д. 7','Березовский, Комсомольский, 1','Братск, Мира, 1/27','Иркутск, Розы Люксембург 217а','Иркутск, Урицкого, 12','Кемерово, Ленина, 75','Кемерово, Ленина, 114','Кемерово, Ленина, 133','Кемерово, Леонова, 11','Кемерово, Радищева, 4','Кемерово, Шахтеров, 85','Ленинск-Кузнецкий, Шишлянникова, 14','Междуреченск, Коммунистический, 26','Новокузнецк, Курако, 1','Новокузнецк, Ленина, 40','Новокузнецк, Ленина, 7','Новокузнецк, Металлургов, 56','Новокузнецк, Тореза, 61А','Новокузнецк, Советской Армии, 11','Нижневартовск, Чапаева, 27','Нижневартовск, ул Мира, д 62 б','Осинники, ул. Победы дом 54/1','Прокопьевск, пр-кт. Ленина, д. 22','Улан-Удэ, Терешковой, 20б'],
+  'Москва 1':['Александров, ул. Ленина, д. 7','Дмитров, Советская, 3','Зеленоград, К601А','Клин, Гагарина, 2/13','Москва, Алтуфьевское, 88','Москва, Б. Черкизовская, 3','Москва, Локомотивный, 4','Москва, Митино, Митинская, 44','Москва, Планерная, д. 7, к. 1','Москва, Плещеева, 4А','Сергиев Посад, Первая Рыбная, 19','Солнечногорск, Дзержинского, 11','Тверь, Октябрьский, 103','Тверь, Трехсвятская, 19','Фрязино, Мира, 8'],
+  'Москва 2':['Балашиха, Советская, 8','Балашиха, Центральная, 37','Видное, Ленинского Комсомола, 46а','Воскресенск, Менделеева, 15','Воскресенск, Менделеева, 20','Егорьевск, Советская 130','Москва, 1-я Владимирская, 37/15','Москва, Городецкая, 5','Москва, Ореховый, 14к3','Ногинск, Соборная, 4А','Ногинск, Трудовая, 13','Орехово-Зуево, Ленина, 14','Реутов, Южная, 2','Шатура, Ильича, 19/8','Электросталь, Октябрьская, 15','Электросталь, Чернышевского, 18','Электроугли, Школьная, 8','Ярославль, Машиностроителей, 11б','Ярославль, Октября, 47','Ярославль, Фрунзе, 29'],
+  'Москва 3':['Коломна пл.Восстания ТК Привокзальный-3','Коломна, Октябрьской революции, 342','Котельники, Опытное поле, 9','Люберцы, Смирновская, 19','Москва, Братиславская, 14','Москва, Зеленый, 83','Москва, Краснодарская, 57','Москва, Первомайская, 73','Москва, Перерва, 56/2','Москва, Свободный проспект, 20','Рыбинск, Бабушкина, 29','Рыбинск, Герцена, 87','Рыбинск, Крестовая, 57','Сафоново, Красногвардейская, 36','Смоленск, Гагарина, 8 Б','Смоленск, Колхозная пл, 3','Чехов, Гагарина, 124','Ярцево, Советская, 19'],
+  'Москва 4':['Владимир, Гагарина, 5','Калуга, Кирова, 16','Кашира, Ильича, 68А','Москва, Адмирала Ушакова, 2','Москва, Ак. Янгеля, 2','Москва, бул. Дмитрия Донского, д. 10','Москва, Волгоградский, 119/22','Москва, Енисейская, 17','Москва, Красного Маяка, 4, к.1','Москва, Мира, 146','Москва, Новоясеневский, 2','Москва, Новоясеневский, 2А','Москва, Рязанский, 46','Москва, Хорошевское шоссе, 88','Новомосковск, Садовского, 19','Одинцово, Советская, 9','Тула, Кирова, 25','Тула, М. Горького, д. 12','Тула, Металлургов, 86'],
+  'Москва 5':['Брянск, 3-го Интернационала, 1','Брянск, 3-го Интернационала, 10','Брянск, 3-го Интернационала, 4','Брянск, Красноармейская, 62','Брянск, Союзная, 5','Брянск, Чернышевского, 17','Воронеж, Молодогвардейцев, 11','Курск, Сумская, 36','Липецк, Мира, 4','Липецк, Победы 74','Мичуринск, ул. Советская, 304','Моршанск, Интернациональная, 20','Первомайский, Вокзальная. 27','Тамбов, Коммунальная, 19'],
+  'Архангельск-Мурманск':['Апатиты, Ферсмана, 23','Архангельск, Воскресенская, 101','Архангельск, Воскресенская, 20','Архангельск, Ленинградский, 38','Архангельск, Попова, 16','Архангельск, Троицкий, 20','Кандалакша, Первомайская, 59','Мончегорск, Металлургов, 34а','Мурманск, Героев Рыбачьего, 55','Мурманск, Коминтерна, 11/2','Мурманск, Ленина, 19а','Северодвинск, Ломоносова, 81','Североморск, Сафонова, 17'],
+  'Великий Новгород':['Боровичи, Подбельского, 17','Великие Луки, Ленина, 48','Великий Новгород, Большая Санкт-Петербургская, 34','Великий Новгород, Свободы, 14','Вышний Волочек, Казанский, 64а','Псков, Октябрьский, 22','Псков, Рижский, 41','Псков, Юбилейная, 68','Старая Русса, Поперечная, 77'],
+  'Вологда':['Вологда, Мира, 20','Вологда, Мира, 42','Калининград, Ленинский, 34а','Калининград, Ленинский, 47-61','Калининград, Профессора Баранова, 34','Калининград, У. Громовой 13Б','Киров, Воровского, 104','Киров, Комсомольская, 21','Череповец, Ленина, 99','Череповец, Победы, 200','Череповец, Советский, 56'],
+  'Петрозаводск':['Кондопога, Пролетарская, 9','Петрозаводск, Александра Невского, 61','Петрозаводск, Красноармейская, 20','Петрозаводск, Ленина, 14','Петрозаводск, Ленина, 35','Петрозаводск, Лесной, 47','Петрозаводск, Маршала Мерецкова, 5'],
+  'Сыктывкар':['Воркута, Ленина, 36','Печора, Гагарина, 39','Сыктывкар, Коммунистическая, 46','Сыктывкар, Октябрьский, 141','Усинск, Нефтянников, 50','Ухта, Строительная, 2а'],
+  'СПб 1':['СПб, Бабушкина, 71/8, 1 этаж','СПб, Бабушкина, 71/8, пом.24-Н','СПб, Балканская площадь, 5','СПб, Белы Куна, 8','СПб, Будапештская, 46','СПб, Димитрова, ж/д ст Купчино','СПб, Дыбенко, 27/1','СПб, Елизарова, 12','СПб, Заневский, 67','СПб, Звездная, 8','СПб, Караваевская, 24','СПб, Ленсовета, 93/15','СПб, Новочеркасский, 28/19','СПб, Пушкин, Оранжерейная, 27','СПб, Шушары, Новгородский пр-т, 3','Янино, Тюльпанов, 2'],
+  'СПб 2':['Выборг, Ленина, 20','СПб, 6-я линия В.О, 27','СПб, Гороховая, 41А','СПб, Испытателей, 6','СПб, Каменноостровский пр-т, 42','СПб, Коломяжский, 15','СПб, Московский, 2','СПб, Мучной, 9','СПб, Наличная, 49','СПб, Просвещения, 30','СПб, Просвещения, 36/141а','СПб, Удельный, 25в','СПб, Энгельса 111, пом. 48Н','СПб, Энгельса, 111, подвал','СПб, Энгельса, 138'],
+  'СПб 3':['Кингисепп, Карла Маркса, 33','СПб, Б. Московская, 1-3/2','СПб, Восстания, 1, подвал','СПб, Кирочная, 19а','СПб, Комендантский, 12','СПб, Лиговский, 84/2','СПб, Нарвский, 31','СПб, Невский, 100А','СПб, Новаторов, 102','СПб, Новаторов, 11, корп 2','СПб, Новаторов, 112','СПб, Петергоф, Санкт-Петербургский, 49','СПб, Стародеревенская, 36','СПб, Стачек, 7','СПб, Туристская, 22а','СПб, Уточкина, 2'],
+  'СПб 4':['Волхов, Юрия Гагарина, 11','Всеволожск, Всеволожский проспект, 55в','Мурино, Петровский б-р, 5','Мурино, ул. Шувалова 33-35','СПб, Гражданский, 114','СПб, Гражданский, 68а','СПб, Индустриальный, 26/24','СПб, Индустриальный, 27','СПб, Кантемировская, 27','СПб, Комсомола, 16а','СПб, Кондратьевский, 49А','СПб, Косыгина, 23','СПб, Кронштадт, Ленина, 16','СПб, Культуры, 1','СПб, Парголово, Фёдора Абрамова, 8','СПб, Просвещения, 84/1'],
+  'СПб 5':['Гатчина, Соборная, 9','СПб, Адмирала Трибуца, 10','СПБ, Большевиков, 1','СПБ, Большевиков, 1, лит.А','СПб, Большевиков, 2, лит.А','СПб, Ветеранов, 101','СПб, Ветеранов, 169, корп. 6','СПб, Ветеранов, 179, стр. 1','СПб, Ветеранов, 97','СПб, Колпино, Пролетарская, 15','СПб, Колпино, Тазаева, 5','СПб, Красное Село, Ленина, 61','СПб, Московский, 172','СПб, Московский, 197а','СПб, Московский, 74','СПб, Стачек, 75','СПб, Стачек, 77а','Чудово, Октябрьская, 4/1']
+};
+
+const SECTIONS = [
+  {id:'s1',title:'Внешний вид и территория',items:[
+    {n:1,t:'Вывеска 585/GOLD на фасаде — целая, чистая, с подсветкой'},
+    {n:2,t:'Фасад, окна, крыльцо в хорошем и безопасном состоянии'},
+    {n:3,t:'Прилегающая территория чистая, есть мусорная урна'},
+    {n:4,t:'Световые короба чистые, с подсветкой, актуальные рекламоносители'},
+    {n:5,t:'Режимы работы по всем ЮЛ'}
+  ]},
+  {id:'s2',title:'Внутреннее оформление и мерчендайзинг',items:[
+    {n:6,t:'Торговый зал чистый, пол/стены/потолок не требуют ремонта'},
+    {n:7,t:'Торговое оборудование исправное, чистое, нет пыли/разводов/скотча'},
+    {n:8,t:'Потолочное освещение и освещение витрин исправно'},
+    {n:9,t:'Кассовая зона чистая: нет еды, аккуратные документы, информационные таблички'},
+    {n:10,t:'Передаточное окно товароведа в хорошем состоянии, указано ФИО'},
+    {n:11,t:'Наличие противопожарного оборудования и эвакуационных указателей'},
+    {n:12,t:'Выкладка по стандарту, 100% ценники, нет брака/пустых мест'},
+    {n:13,t:'Информация о текущих акциях, безналичном расчёте, кредите, плакаты'},
+    {n:14,t:'Уголок потребителей по всем ЮЛ, актуальный прейскурант, условия займов'},
+    {n:15,t:'Корпоративная звуковая дорожка играет / комфортный климат'}
+  ]},
+  {id:'s3',title:'Персонал',items:[
+    {n:16,t:'Количество продавцов/товароведов соответствует штатному расписанию'},
+    {n:17,t:'Продавцы знают план по всем направлениям на день/неделю/месяц'},
+    {n:18,t:'Продавцы/товароведы знают о текущих акциях в рознице/ломбарде'},
+    {n:19,t:'Продавцы знают схему мотивации, могут рассчитать свою ЗП'},
+    {n:20,t:'Продавцы не занимаются посторонними делами в рабочее время'},
+    {n:21,t:'Внешний вид соответствует стандартам (шарф, бейдж, белая рубашка, классика)'}
+  ]},
+  {id:'s4',title:'Качество обслуживания — магазин',items:[
+    {n:22,t:'Продавцы приветствуют клиентов, моментально реагируют'},
+    {n:23,t:'Выявляют потребность, задают наводящие вопросы, не теряют интереса'},
+    {n:24,t:'Презентуют Электронный каталог, предлагают заказ, рассказывают о преимуществах'},
+    {n:25,t:'При заказе по каталогу спрашивают о предоплате, оформляют Сертификат'},
+    {n:26,t:'Идентифицируют/регистрируют клиента в RTOM в начале диалога'},
+    {n:27,t:'Вносят все изделия интереса клиента в RTOM при демонстрации'},
+    {n:28,t:'Спрашивают e-mail при регистрации БК'},
+    {n:29,t:'Предлагают сопутствующие товары (футляры, чистящие средства), подбирают комплект'},
+    {n:30,t:'Информируют о возможности купить в кредит/рассрочку'},
+    {n:31,t:'Информируют об ОСН, знают актуальные тарифы приёма'},
+    {n:32,t:'Благодарят покупателя, не теряют интереса после завершения диалога'},
+    {n:33,t:'Продавцы прошли обучение, сдали тесты на учебном портале'},
+    {n:34,t:'Продавцы имеют пароли и доступы: касса/кредит/САП'}
+  ]},
+  {id:'s5',title:'Качество обслуживания — ломбард',items:[
+    {n:35,t:'Товаровед приветствует клиента, реагирует моментально'},
+    {n:36,t:'Выявляет потребность, консультирует по всем продуктам (ЮИ и технике)'},
+    {n:37,t:'Работает с документами, удостоверяющими личность, по регламенту'},
+    {n:38,t:'Оценка и оформление ссуды по действующим прейскурантам'},
+    {n:39,t:'Предлагает перевести ссуду на банковскую карту'},
+    {n:40,t:'Не отказывает в обслуживании, не перенаправляет к конкурентам'},
+    {n:41,t:'Информирует о сроках, сумме процентов и возможности перезалога'},
+    {n:42,t:'Информирует о перезалоге через личный кабинет'},
+    {n:43,t:'Оформляет выкуп/перезалог согласно регламентам'},
+    {n:44,t:'Запрашивает e-mail, вносит в карточку клиента'},
+    {n:45,t:'Приглашает контролёра при оформлении ЗБ свыше 40 000 ₽'},
+    {n:46,t:'Звонит в видеонаблюдение при оформлении ЗБ свыше 150 000 ₽'},
+    {n:47,t:'Товароведы прошли обучение, сдали тесты по ломбарду и технике ЮИ'},
+    {n:48,t:'Товароведы имеют пароли и доступы в САП'}
+  ]},
+  {id:'s6',title:'Розница (документы)',items:[
+    {n:49,t:'ДС в кассе соответствуют «Х»-отчёту, лимит кассы не более 10 000 ₽'},
+    {n:50,t:'Нет непринятых посылок (48 ч), неотправленного брака и товара в сейфе'},
+    {n:51,t:'Журнал учёта ЭТМЦ ведётся, подписи есть, выборочный пересчёт ≥500 изделий'},
+    {n:52,t:'Подписанные ДИ, КМО, ИМО, реестр ознакомления с приказами, факт обучения'},
+    {n:53,t:'Папки синего и красного кодов оформлены верно'}
+  ]},
+  {id:'s7',title:'Ломбард (документы)',items:[
+    {n:54,t:'Документация ломбарда и залоговые билеты соответствуют правилам'},
+    {n:55,t:'Подписи директора на ЗБ при сумме >40 000 ₽ и >150 000 ₽'},
+    {n:56,t:'Акты приёма-передачи смены между товароведами за последние 15 дней'},
+    {n:57,t:'Наличные в кассе ломбарда соответствуют акту приёма-передачи и кассовой книге SAP'},
+    {n:58,t:'Остаток ЗБ в кладовой соответствует акту приёма-передачи, порядок хранения соблюдён'},
+    {n:59,t:'Проверены изделия в залоге: ≥30% ЗБ (не менее 15, не более 120), все ЗБ >40 000 ₽'},
+    {n:60,t:'Нет неотправленных изделий (торги) с истёкшим сроком погашения'},
+    {n:61,t:'Подписанные ДИ, КМО, ИМО товароведа, реестр приказов, факт обучения'},
+    {n:62,t:'Папки синего и красного кодов оформлены верно'}
+  ]},
+  {id:'s8',title:'Безопасность',items:[
+    {n:63,t:'Накладные на внутренние перемещения (ТОРГ №13) с подписями МОЛ для всех ЮЛ'},
+    {n:64,t:'Журналы приёма/посылок для всех ЮЛ'},
+    {n:65,t:'Журнал внешних проверок ведётся'},
+    {n:66,t:'Браслет парогенератора надет на одного из сотрудников'},
+    {n:67,t:'Товаровед закрывает дверь ломбарда на ключ, ключей в замке нет'},
+    {n:68,t:'Сейфовая и сейфы закрыты на ключ, ключей в замке нет'},
+    {n:69,t:'Ключи от сейфов в недоступном для посторонних месте'},
+    {n:70,t:'Витрины, касса, калитка закрыты, запорные устройства исправны, витрины на сигнализации'},
+    {n:71,t:'Ключи от кассового ящика и витрин не на видных местах и не в замках'},
+    {n:72,t:'КТС у всего персонала, работоспособна, проверена утром, запись в журнале'},
+    {n:73,t:'Камеры видеонаблюдения работают, обзор достаточный, запись ведётся, сигнализация работает'},
+    {n:74,t:'Сейфы закрыты, нет ТМЦ/ДС вне сейфов, вместимость достаточна'}
+  ]}
+];
+
+let answers = {}, comments = {}, tasks = [], infoFields = {};
+
+// BUILD UI
+function build() {
+  const c = document.getElementById('content');
+  c.innerHTML = '';
+
+  // Info block
+  c.appendChild(buildInfo());
+
+  // Progress bar
+  const pb = document.getElementById('progBar');
+  pb.innerHTML = '';
+  SECTIONS.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'prog-sec';
+    d.id = 'pb_' + s.id;
+    d.title = s.title;
+    d.onclick = () => document.getElementById(s.id).scrollIntoView({behavior:'smooth'});
+    pb.appendChild(d);
+  });
+
+  // Sections
+  SECTIONS.forEach(s => c.appendChild(buildSection(s)));
+
+  // Tasks
+  c.appendChild(buildTasks());
+
+  // Signature
+  c.appendChild(buildSign());
+
+  // Result
+  c.appendChild(buildResult());
+
+  // Open first
+  toggle('body_s1');
+}
+
+function buildInfo() {
+  const stores = STORES_DATA[user.filial] || [];
+  const now = new Date();
+  const d = now.toLocaleDateString('ru-RU',{day:'2-digit',month:'long',year:'numeric'});
+  const t = now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  const div = document.createElement('div');
+  div.className = 'section-card';
+  div.innerHTML = `
+    <div class="section-header" onclick="toggle('body_info')">
+      <span class="section-title">📍 Информация об объекте</span><span>▼</span>
+    </div>
+    <div class="section-body open" id="body_info">
+      <div class="info-block">
+        <div class="info-row">
+          <div class="info-label">Адрес объекта *</div>
+          <select class="info-input" id="storeSelect" onchange="infoFields.store=this.value">
+            <option value="">— Выберите магазин —</option>
+            ${stores.map(s=>`<option value="${s}">${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="info-row-2">
+          <div class="info-row"><div class="info-label">Дата</div><input class="info-input" value="${d}" readonly></div>
+          <div class="info-row"><div class="info-label">Время</div><input class="info-input" value="${t}" readonly></div>
+        </div>
+        <div class="info-row"><div class="info-label">ФИО проверяющего (ДГМ) *</div><input class="info-input" placeholder="Введите ФИО" oninput="infoFields.dgm=this.value"></div>
+        <div class="info-row"><div class="info-label">ФИО ДФ</div><input class="info-input" placeholder="Введите ФИО" oninput="infoFields.df=this.value"></div>
+        <div class="info-row"><div class="info-label">ФИО СП</div><input class="info-input" placeholder="Введите ФИО" oninput="infoFields.sp=this.value"></div>
+        <div class="info-row"><div class="info-label">ФИО товароведа</div><input class="info-input" placeholder="Введите ФИО" oninput="infoFields.tovar=this.value"></div>
+        <div class="info-row"><div class="info-label">ФИО продавцов</div><input class="info-input" placeholder="Введите ФИО" oninput="infoFields.sellers=this.value"></div>
+      </div>
+    </div>`;
+  return div;
+}
+
+function buildSection(s) {
+  const div = document.createElement('div');
+  div.className = 'section-card';
+  div.id = s.id;
+  div.innerHTML = `
+    <div class="section-header" onclick="toggle('body_${s.id}')">
+      <span class="section-title">${s.title}</span>
+      <span class="section-score" id="sc_${s.id}">0/${s.items.length}</span>
+    </div>
+    <div class="section-body" id="body_${s.id}">
+      ${s.items.map(i=>`
+        <div class="check-item" id="ci_${i.n}">
+          <div class="check-num">Пункт ${i.n}</div>
+          <div class="check-text">${i.t}</div>
+          <div class="check-btns">
+            <button class="btn-yes" id="y_${i.n}" onclick="setAns(${i.n},'yes')">✓ Да</button>
+            <button class="btn-no" id="n_${i.n}" onclick="setAns(${i.n},'no')">✗ Нет</button>
+          </div>
+          <textarea class="check-comment" rows="2" placeholder="Комментарий..." oninput="comments[${i.n}]=this.value"></textarea>
+        </div>`).join('')}
+    </div>`;
+  return div;
+}
+
+function buildTasks() {
+  const div = document.createElement('div');
+  div.className = 'tasks-block';
+  div.innerHTML = `
+    <div class="tasks-header"><div class="tasks-title">📋 Задачи по итогам проверки</div></div>
+    <div class="tasks-body">
+      <button class="auto-tasks-btn" onclick="autoTasks()">⚡ Создать задачи по нарушениям автоматически</button>
+      <div id="tasksList"></div>
+      <textarea class="task-input" id="newTaskText" rows="2" placeholder="Описание задачи..."></textarea>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <input type="date" class="task-deadline" id="newDeadline">
+        <button class="btn-add-task" onclick="addTask()">+ Добавить</button>
+      </div>
+    </div>`;
+  return div;
+}
+
+function buildSign() {
+  const div = document.createElement('div');
+  div.className = 'sign-block';
+  div.innerHTML = `
+    <div class="sign-header"><div class="sign-title">✍️ Подпись проверяющего</div></div>
+    <canvas id="sigCanvas" height="150"></canvas>
+    <button class="btn-clear" onclick="clearSig()">✕ Очистить</button>`;
+  setTimeout(initSig, 200);
+  return div;
+}
+
+function buildResult() {
+  const div = document.createElement('div');
+  div.className = 'result-block';
+  div.id = 'resultBlock';
+  div.innerHTML = `
+    <div class="result-title">📊 Итог проверки</div>
+    <div class="result-stats">
+      <div class="stat-box g"><div class="stat-num g" id="rYes">0</div><div class="stat-label">Соответствует</div></div>
+      <div class="stat-box r"><div class="stat-num r" id="rNo">0</div><div class="stat-label">Не соответствует</div></div>
+      <div class="stat-box gr"><div class="stat-num gr" id="rSkip">74</div><div class="stat-label">Не проверено</div></div>
+    </div>
+    <div class="result-pct" id="rPct">0%</div>
+    <div class="result-pct-label">Результат проверки</div>
+    <div id="secResults"></div>`;
+  return div;
+}
+
+function toggle(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
+}
+
+function setAns(n, val) {
+  answers[n] = val;
+  document.getElementById('ci_'+n).className = 'check-item ' + val;
+  document.getElementById('y_'+n).className = 'btn-yes' + (val==='yes'?' active':'');
+  document.getElementById('n_'+n).className = 'btn-no' + (val==='no'?' active':'');
+  updateUI();
+}
+
+function updateUI() {
+  let yes=0, no=0, total=Object.keys(answers).length;
+  SECTIONS.forEach(s => {
+    let sY=0;
+    s.items.forEach(i => {
+      if(answers[i.n]==='yes'){yes++;sY++;}
+      if(answers[i.n]==='no') no++;
+    });
+    const sc = document.getElementById('sc_'+s.id);
+    if(sc) sc.textContent = sY+'/'+s.items.length;
+    const pb = document.getElementById('pb_'+s.id);
+    if(pb){
+      const tot = s.items.filter(i=>answers[i.n]).length;
+      pb.className = 'prog-sec' + (tot===s.items.length?' done':tot>0?' partial':'');
+    }
+  });
+  document.getElementById('progText').textContent = total+' из 74 проверено';
+  const pct = total>0?Math.round(yes/total*100):0;
+  document.getElementById('rYes').textContent = yes;
+  document.getElementById('rNo').textContent = no;
+  document.getElementById('rSkip').textContent = 74-total;
+  document.getElementById('rPct').textContent = pct+'%';
+  const sr = document.getElementById('secResults');
+  if(sr) sr.innerHTML = SECTIONS.map(s=>{
+    let sY=0; s.items.forEach(i=>{if(answers[i.n]==='yes')sY++;});
+    return `<div class="sec-row"><span>${s.title}</span><span style="font-weight:700;color:#f5a623">${sY}/${s.items.length}</span></div>`;
+  }).join('');
+}
+
+function autoTasks() {
+  SECTIONS.forEach(s => s.items.forEach(i => {
+    if(answers[i.n]==='no' && !tasks.find(t=>t.auto&&t.ref===i.n)){
+      const dl = new Date(); dl.setDate(dl.getDate()+3);
+      tasks.push({text:i.t, deadline:dl.toISOString().split('T')[0], auto:true, ref:i.n});
+    }
+  }));
+  renderTasks();
+}
+
+function addTask() {
+  const txt = document.getElementById('newTaskText').value.trim();
+  const dl = document.getElementById('newDeadline').value;
+  if(!txt){alert('Введите описание');return;}
+  tasks.push({text:txt, deadline:dl, auto:false});
+  document.getElementById('newTaskText').value='';
+  document.getElementById('newDeadline').value='';
+  renderTasks();
+}
+
+function delTask(i) { tasks.splice(i,1); renderTasks(); }
+
+function renderTasks() {
+  document.getElementById('tasksList').innerHTML = tasks.map((t,i)=>`
+    <div class="task-item">
+      <button class="task-delete" onclick="delTask(${i})">✕</button>
+      <div class="task-text">${t.text}</div>
+      ${t.deadline?`<div class="task-meta">📅 ${t.deadline}</div>`:''}
+      ${t.auto?'<div class="task-meta" style="color:#f5a623">⚡ По нарушению</div>':''}
+    </div>`).join('');
+}
+
+function initSig() {
+  const c = document.getElementById('sigCanvas');
+  if(!c) return;
+  c.width = c.offsetWidth * devicePixelRatio;
+  c.height = 150 * devicePixelRatio;
+  const ctx = c.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  ctx.strokeStyle='#333'; ctx.lineWidth=2; ctx.lineCap='round';
+  let drawing=false, lx, ly;
+  const pos = e => { const r=c.getBoundingClientRect(),s=e.touches?e.touches[0]:e; return {x:s.clientX-r.left,y:s.clientY-r.top}; };
+  c.onmousedown = e=>{drawing=true;const p=pos(e);lx=p.x;ly=p.y;};
+  c.onmousemove = e=>{if(!drawing)return;const p=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y;};
+  c.onmouseup = ()=>drawing=false;
+  c.ontouchstart = e=>{e.preventDefault();drawing=true;const p=pos(e);lx=p.x;ly=p.y;};
+  c.ontouchmove = e=>{e.preventDefault();if(!drawing)return;const p=pos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();lx=p.x;ly=p.y;};
+  c.ontouchend = ()=>drawing=false;
+}
+
+function clearSig() {
+  const c=document.getElementById('sigCanvas');
+  c.getContext('2d').clearRect(0,0,c.width,c.height);
+}
+
+async function submitCheck() {
+  const store = document.getElementById('storeSelect')?.value;
+  if(!store){alert('Выберите магазин');return;}
+  const answered = Object.keys(answers).length;
+  if(answered < 5){alert('Заполните хотя бы 5 пунктов');return;}
+
+  const yes = Object.values(answers).filter(v=>v==='yes').length;
+  const pct = Math.round(yes/answered*100);
+
+  try {
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('submitBtn').textContent = 'Сохраняем...';
+
+    const res = await fetch('/api/checks', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({
+        store, dgm_name:infoFields.dgm||'', df_name:infoFields.df||'',
+        sp_name:infoFields.sp||'', tovar_name:infoFields.tovar||'',
+        sellers_name:infoFields.sellers||'', answers, comments, score_percent:pct
+      })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error);
+
+    // Сохраняем задачи
+    if(tasks.length > 0) {
+      await fetch('/api/tasks', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body: JSON.stringify({tasks, check_id:data.check_id, store})
+      });
+    }
+
+    const ss = document.getElementById('successScreen');
+    ss.style.display = 'flex';
+    document.getElementById('successSub').innerHTML =
+      `<b>${store}</b><br>Соответствует: ${yes} | Нарушений: ${Object.values(answers).filter(v=>v==='no').length} | Результат: <b>${pct}%</b><br>Задач поставлено: ${tasks.length}`;
+
+  } catch(e) {
+    alert('Ошибка: ' + e.message);
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('submitBtn').textContent = 'Завершить проверку';
+  }
+}
+
+function logout() {
+  localStorage.clear();
+  window.location.href = '/';
+}
+
+build();
+</script>
+</body>
+</html>
