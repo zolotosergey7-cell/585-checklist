@@ -417,6 +417,38 @@ function setAns(n, val) {
   document.getElementById('y_'+n).className = 'btn-yes' + (val==='yes'?' active':'');
   document.getElementById('n_'+n).className = 'btn-no' + (val==='no'?' active':'');
   updateUI();
+  autoScroll(n);
+}
+
+function autoScroll(n) {
+  // Находим текущий раздел
+  for (let i = 0; i < SECTIONS.length; i++) {
+    const s = SECTIONS[i];
+    if (!s.items.find(item => item.n === n)) continue;
+
+    // Все ли пункты раздела отвечены?
+    const allAnswered = s.items.every(item => answers[item.n]);
+    if (!allAnswered) return;
+
+    // Сворачиваем текущий раздел
+    const currBody = document.getElementById('body_' + s.id);
+    if (currBody) currBody.classList.remove('open');
+
+    // Открываем следующий раздел если есть
+    if (i + 1 < SECTIONS.length) {
+      const nextSection = SECTIONS[i + 1];
+      const nextBody = document.getElementById('body_' + nextSection.id);
+      if (nextBody) {
+        nextBody.classList.add('open');
+        // Прокручиваем к следующему разделу
+        setTimeout(() => {
+          const nextCard = document.getElementById(nextSection.id);
+          if (nextCard) nextCard.scrollIntoView({behavior:'smooth', block:'start'});
+        }, 200);
+      }
+    }
+    break;
+  }
 }
 
 function updateUI() {
