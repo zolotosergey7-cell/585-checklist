@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>585/GOLD — Аналитика</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f5;color:#333;font-size:14px}
+.header{background:#f5a623;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.header-title{font-size:16px;font-weight:700}
+.header-sub{font-size:11px;opacity:.85;margin-top:2px}
+.btn-logout{background:rgba(255,255,255,0.25);border:none;color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
+.content{padding:12px 12px 40px}
+.filter-bar{background:#fff;border-radius:10px;padding:12px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.filter-group{flex:1;min-width:140px}
+.filter-label{font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;margin-bottom:6px}
+.filter-select{width:100%;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none}
+.filter-select:focus{border-color:#f5a623}
+.btn-export{padding:9px 16px;background:#f5a623;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-export:hover{background:#e8891a}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.stat-card{background:#fff;border-radius:12px;padding:14px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.stat-n{font-size:28px;font-weight:800;margin-bottom:4px}
+.stat-n.orange{color:#f5a623}
+.stat-n.green{color:#4caf50}
+.stat-n.red{color:#e53935}
+.stat-n.blue{color:#1976d2}
+.stat-l{font-size:11px;color:#888}
+.card{background:#fff;border-radius:12px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden}
+.card-header{padding:14px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+.card-title{font-weight:700;font-size:14px;color:#f5a623;text-transform:uppercase}
+.card-body{padding:12px 16px}
+.table{width:100%;border-collapse:collapse;font-size:13px}
+.table th{text-align:left;padding:8px 10px;background:#f9f9f9;color:#888;font-size:11px;text-transform:uppercase;font-weight:600}
+.table td{padding:8px 10px;border-bottom:1px solid #f5f5f5}
+.table tr:last-child td{border-bottom:none}
+.table tr:hover td{background:#fafafa}
+.score-bar{height:6px;background:#eee;border-radius:3px;margin-top:4px;overflow:hidden}
+.score-fill{height:100%;border-radius:3px;transition:width .3s}
+.score-fill.good{background:#4caf50}
+.score-fill.mid{background:#f5a623}
+.score-fill.bad{background:#e53935}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.badge.overdue{background:#fff5f5;color:#e53935}
+.badge.pending{background:#f3e5f5;color:#7b1fa2}
+.badge.open{background:#e3f2fd;color:#1976d2}
+.badge.closed{background:#e8f5e9;color:#4caf50}
+.violation-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
+.violation-bar{height:6px;background:#eee;border-radius:3px;margin-top:4px;overflow:hidden;width:100px}
+.violation-fill{height:100%;background:#e53935;border-radius:3px}
+.violation-count{font-weight:700;color:#e53935;min-width:30px;text-align:right}
+.chart-wrap{padding:12px;height:250px;position:relative}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tab{padding:8px 16px;background:#fff;border:1.5px solid #eee;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;color:#888}
+.tab.active{background:#f5a623;color:#fff;border-color:#f5a623}
+.section{display:none}
+.section.active{display:block}
+.loading{text-align:center;padding:40px;color:#aaa}
+.empty{text-align:center;padding:30px;color:#aaa;font-size:13px}
+.overdue-row{background:#fff5f5}
+.td-card{background:#f9f9f9;border:1.5px solid #eee;border-radius:10px;padding:12px;margin-bottom:8px}
+.td-name{font-weight:700;font-size:14px;margin-bottom:8px;color:#333}
+.td-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+.td-stat{text-align:center;background:#fff;border-radius:8px;padding:8px}
+.td-stat-n{font-size:18px;font-weight:800}
+.td-stat-l{font-size:10px;color:#888}
+@media(max-width:600px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .filter-bar{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title" id="headerTitle">Аналитика</div>
+    <div class="header-sub" id="headerSub"></div>
+  </div>
+  <button class="btn-logout" onclick="logout()">Выйти</button>
+</div>
+
+<div class="content">
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="filter-label">Период</div>
+      <select class="filter-select" id="periodFilter" onchange="loadData()">
+        <option value="all">Всё время</option>
+        <option value="month" selected>Последний месяц</option>
+        <option value="week">Последняя неделя</option>
+      </select>
+    </div>
+    <div class="filter-group" id="tdFilterGroup" style="display:none">
+      <div class="filter-label">Дирекция</div>
+      <select class="filter-select" id="tdFilter" onchange="loadData()">
+        <option value="">Все дирекции</option>
+        <option value="Поволжье-Юг">Поволжье-Юг</option>
+        <option value="Урал">Урал</option>
+        <option value="Москва">Москва</option>
+        <option value="СЕВЕРО-ЗАПАД">СЕВЕРО-ЗАПАД</option>
+        <option value="СПб">СПб</option>
+      </select>
+    </div>
+    <button class="btn-export" onclick="exportExcel()">⬇ Выгрузить Excel</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('overview')">📊 Обзор</div>
+    <div class="tab" onclick="switchTab('stores')">🏪 Магазины</div>
+    <div class="tab" onclick="switchTab('violations')">❌ Нарушения</div>
+    <div class="tab" onclick="switchTab('tasks')">📋 Задачи</div>
+  </div>
+
+  <div class="section active" id="tab-overview">
+    <div class="stats-grid" id="statsGrid"><div class="loading">Загрузка...</div></div>
+    <div class="card" id="chartCard" style="display:none">
+      <div class="card-header"><span class="card-title">📈 Динамика результатов</span></div>
+      <div class="chart-wrap"><canvas id="dynamicChart"></canvas></div>
+    </div>
+    <div class="card" id="tdCard" style="display:none">
+      <div class="card-header"><span class="card-title">🏢 По дирекциям</span></div>
+      <div class="card-body" id="tdList"></div>
+    </div>
+  </div>
+
+  <div class="section" id="tab-stores">
+    <div class="card">
+      <div class="card-header"><span class="card-title">🏪 Рейтинг магазинов</span></div>
+      <div class="card-body" style="padding:0">
+        <table class="table" id="storesTable">
+          <thead><tr><th>#</th><th>Магазин</th><th>Дирекция</th><th>Проверок</th><th>Средний %</th></tr></thead>
+          <tbody id="storesBody"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="tab-violations">
+    <div class="card">
+      <div class="card-header"><span class="card-title">❌ Топ нарушений</span></div>
+      <div class="card-body" id="violationsList"><div class="loading">Загрузка...</div></div>
+    </div>
+  </div>
+
+  <div class="section" id="tab-tasks">
+    <div class="stats-grid" id="taskStatsGrid"></div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">⚠️ Просроченные задачи</span></div>
+      <div class="card-body" style="padding:0">
+        <table class="table">
+          <thead><tr><th>Магазин</th><th>Задача</th><th>Срок</th><th>Статус</th><th>Просрочено</th></tr></thead>
+          <tbody id="overdueBody"><tr><td colspan="5" class="loading">Загрузка...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">📋 Все задачи</span></div>
+      <div class="card-body" style="padding:0">
+        <table class="table">
+          <thead><tr><th>Магазин</th><th>Задача</th><th>Срок</th><th>Статус</th></tr></thead>
+          <tbody id="allTasksBody"><tr><td colspan="4" class="loading">Загрузка...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token || !['td','dfrs'].includes(user.role)) window.location.href = '/';
+
+document.getElementById('headerTitle').textContent = user.role === 'dfrs' ? 'Аналитика ДФРС' : `Аналитика ТД ${user.td}`;
+document.getElementById('headerSub').textContent = user.role === 'dfrs' ? 'Все дирекции' : `ТД ${user.td}`;
+if (user.role === 'dfrs') document.getElementById('tdFilterGroup').style.display = 'block';
+
+const ITEMS = {
+  1:'Вывеска 585/GOLD на фасаде',2:'Фасад, окна, крыльцо',3:'Прилегающая территория',
+  4:'Световые короба',5:'Режимы работы по всем ЮЛ',6:'Торговый зал чистый',
+  7:'Торговое оборудование',8:'Освещение витрин',9:'Кассовая зона',
+  10:'Передаточное окно товароведа',11:'Противопожарное оборудование',
+  12:'Выкладка по стандарту',13:'Информация об акциях',14:'Уголок потребителей',
+  15:'Корпоративная звуковая дорожка',16:'Штатное расписание',17:'Знание плана',
+  18:'Знание акций',19:'Схема мотивации',20:'Посторонние дела',21:'Внешний вид',
+  22:'Приветствие клиентов',23:'Выявление потребности',24:'Электронный каталог',
+  25:'Предоплата/Сертификат',26:'Регистрация в RTOM',27:'Изделия в RTOM',
+  28:'E-mail при регистрации БК',29:'Сопутствующие товары',30:'Кредит/рассрочка',
+  31:'ОСН тарифы',32:'Благодарность покупателю',33:'Обучение продавцов',
+  34:'Пароли и доступы',35:'Приветствие товароведа',36:'Консультация по продуктам',
+  37:'Работа с документами',38:'Оформление ссуды',39:'Перевод на карту',
+  40:'Без отказов в обслуживании',41:'Информирование о перезалоге',
+  42:'Перезалог через ЛК',43:'Выкуп/перезалог',44:'E-mail товароведа',
+  45:'Контролёр при ЗБ >40т',46:'Видеонаблюдение при ЗБ >150т',
+  47:'Обучение товароведов',48:'Пароли товароведов',49:'ДС в кассе',
+  50:'Непринятые посылки',51:'Журнал ЭТМЦ',52:'ДИ КМО ИМО',53:'Папки кодов',
+  54:'Документация ломбарда',55:'Подписи директора на ЗБ',56:'Акты приёма-передачи',
+  57:'Наличные в кассе ломбарда',58:'Остаток ЗБ в кладовой',59:'Проверка изделий в залоге',
+  60:'Неотправленные изделия',61:'ДИ КМО ИМО товароведа',62:'Папки кодов ломбард',
+  63:'Накладные ТОРГ-13',64:'Журналы приёма посылок',65:'Журнал внешних проверок',
+  66:'Браслет парогенератора',67:'Дверь ломбарда',68:'Сейфовая',69:'Ключи от сейфов',
+  70:'Витрины и касса',71:'Ключи от кассового ящика',72:'КТС персонала',
+  73:'Камеры видеонаблюдения',74:'Сейфы закрыты'
+};
+
+let dynamicChartInstance = null;
+let allChecksData = [];
+let allTasksData = [];
+
+function getPeriodDate() {
+  const period = document.getElementById('periodFilter').value;
+  const now = new Date();
+  if (period === 'week') { now.setDate(now.getDate()-7); return now.toISOString(); }
+  if (period === 'month') { now.setMonth(now.getMonth()-1); return now.toISOString(); }
+  return null;
+}
+
+function getTdFilter() {
+  if (user.role === 'td') return user.td;
+  return document.getElementById('tdFilter')?.value || '';
+}
+
+async function loadData() {
+  try {
+    const [checksRes, tasksRes] = await Promise.all([
+      fetch('/api/checks', {headers:{'Authorization':'Bearer '+token}}),
+      fetch('/api/tasks', {headers:{'Authorization':'Bearer '+token}})
+    ]);
+    let checks = await checksRes.json();
+    let tasks = await tasksRes.json();
+
+    // Фильтр по периоду
+    const since = getPeriodDate();
+    if (since) checks = checks.filter(c => new Date(c.created_at) >= new Date(since));
+
+    // Фильтр по ТД
+    const tdFilter = getTdFilter();
+    if (tdFilter) {
+      checks = checks.filter(c => c.td === tdFilter);
+      tasks = tasks.filter(t => {
+        const check = allChecksData.find(c => c.id === t.check_id);
+        return check ? check.td === tdFilter : true;
+      });
+    }
+
+    allChecksData = checks;
+    allTasksData = tasks;
+
+    renderOverview(checks, tasks);
+    renderStores(checks);
+    renderViolations(checks);
+    renderTasks(tasks);
+
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function renderOverview(checks, tasks) {
+  const totalChecks = checks.length;
+  const avgScore = totalChecks > 0
+    ? Math.round(checks.reduce((s,c) => s + (c.score_percent||0), 0) / totalChecks) : 0;
+  const openTasks = tasks.filter(t => ['new','in_work'].includes(t.status)).length;
+  const overdue = tasks.filter(t => {
+    if (!t.deadline || t.status === 'closed') return false;
+    return new Date(t.deadline) < new Date();
+  }).length;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-n orange">${totalChecks}</div><div class="stat-l">Проверок</div></div>
+    <div class="stat-card"><div class="stat-n ${avgScore>=80?'green':avgScore>=60?'orange':'red'}">${avgScore}%</div><div class="stat-l">Средний результат</div></div>
+    <div class="stat-card"><div class="stat-n blue">${openTasks}</div><div class="stat-l">Открытых задач</div></div>
+    <div class="stat-card"><div class="stat-n red">${overdue}</div><div class="stat-l">Просроченных</div></div>`;
+
+  // Динамика
+  if (checks.length > 0) {
+    document.getElementById('chartCard').style.display = 'block';
+    renderDynamicChart(checks);
+  }
+
+  // По дирекциям (только для ДФРС)
+  if (user.role === 'dfrs') {
+    document.getElementById('tdCard').style.display = 'block';
+    renderTdOverview(checks, tasks);
+  }
+}
+
+function renderDynamicChart(checks) {
+  // Группируем по дате
+  const byDate = {};
+  checks.forEach(c => {
+    const d = new Date(c.created_at).toLocaleDateString('ru-RU');
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(c.score_percent || 0);
+  });
+  const labels = Object.keys(byDate).slice(-14);
+  const data = labels.map(d => {
+    const arr = byDate[d];
+    return Math.round(arr.reduce((s,v)=>s+v,0)/arr.length);
+  });
+
+  if (dynamicChartInstance) dynamicChartInstance.destroy();
+  const ctx = document.getElementById('dynamicChart').getContext('2d');
+  dynamicChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Средний результат %',
+        data,
+        borderColor: '#f5a623',
+        backgroundColor: 'rgba(245,166,35,0.1)',
+        tension: 0.3,
+        fill: true,
+        pointBackgroundColor: '#f5a623'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {legend:{display:false}},
+      scales: {y:{min:0,max:100,ticks:{callback:v=>v+'%'}}}
+    }
+  });
+}
+
+function renderTdOverview(checks, tasks) {
+  const tds = ['Поволжье-Юг','Урал','Москва','СЕВЕРО-ЗАПАД','СПб'];
+  const html = tds.map(td => {
+    const tdChecks = checks.filter(c=>c.td===td);
+    const tdTasks = tasks.filter(t=>{
+      const c = checks.find(c=>c.id===t.check_id);
+      return c && c.td===td;
+    });
+    const avg = tdChecks.length > 0
+      ? Math.round(tdChecks.reduce((s,c)=>s+(c.score_percent||0),0)/tdChecks.length) : 0;
+    const overdue = tdTasks.filter(t=>t.deadline&&t.status!=='closed'&&new Date(t.deadline)<new Date()).length;
+    const scoreClass = avg>=80?'green':avg>=60?'orange':'red';
+    return `<div class="td-card">
+      <div class="td-name">${td}</div>
+      <div class="td-stats">
+        <div class="td-stat"><div class="td-stat-n" style="color:#f5a623">${tdChecks.length}</div><div class="td-stat-l">Проверок</div></div>
+        <div class="td-stat"><div class="td-stat-n" style="color:${avg>=80?'#4caf50':avg>=60?'#f5a623':'#e53935'}">${avg}%</div><div class="td-stat-l">Средний %</div></div>
+        <div class="td-stat"><div class="td-stat-n" style="color:#e53935">${overdue}</div><div class="td-stat-l">Просрочено</div></div>
+      </div>
+      <div class="score-bar"><div class="score-fill ${scoreClass}" style="width:${avg}%"></div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('tdList').innerHTML = html;
+}
+
+function renderStores(checks) {
+  const storeMap = {};
+  checks.forEach(c => {
+    if (!c.store) return;
+    if (!storeMap[c.store]) storeMap[c.store] = {store:c.store, td:c.td, scores:[], count:0};
+    storeMap[c.store].scores.push(c.score_percent||0);
+    storeMap[c.store].count++;
+  });
+
+  const stores = Object.values(storeMap).map(s => ({
+    ...s,
+    avg: Math.round(s.scores.reduce((a,b)=>a+b,0)/s.scores.length)
+  })).sort((a,b)=>b.avg-a.avg);
+
+  if (!stores.length) {
+    document.getElementById('storesBody').innerHTML = '<tr><td colspan="5" class="empty">Нет данных</td></tr>';
+    return;
+  }
+
+  document.getElementById('storesBody').innerHTML = stores.map((s,i) => {
+    const cls = s.avg>=80?'good':s.avg>=60?'mid':'bad';
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${s.store}</td>
+      <td>${s.td||'—'}</td>
+      <td>${s.count}</td>
+      <td>
+        <div style="font-weight:700;color:${s.avg>=80?'#4caf50':s.avg>=60?'#f5a623':'#e53935'}">${s.avg}%</div>
+        <div class="score-bar"><div class="score-fill ${cls}" style="width:${s.avg}%"></div></div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderViolations(checks) {
+  const vMap = {};
+  checks.forEach(c => {
+    const answers = c.answers || {};
+    Object.entries(answers).forEach(([n,v]) => {
+      if (v === 'no') {
+        if (!vMap[n]) vMap[n] = 0;
+        vMap[n]++;
+      }
+    });
+  });
+
+  const violations = Object.entries(vMap)
+    .map(([n,cnt]) => ({n:parseInt(n), text:ITEMS[n]||'Пункт '+n, cnt}))
+    .sort((a,b)=>b.cnt-a.cnt)
+    .slice(0, 20);
+
+  if (!violations.length) {
+    document.getElementById('violationsList').innerHTML = '<div class="empty">Нет данных</div>';
+    return;
+  }
+
+  const max = violations[0].cnt;
+  document.getElementById('violationsList').innerHTML = violations.map((v,i) => `
+    <div class="violation-row">
+      <div style="flex:1">
+        <div>${i+1}. <b>П.${v.n}</b> — ${v.text}</div>
+        <div class="violation-bar"><div class="violation-fill" style="width:${Math.round(v.cnt/max*100)}%"></div></div>
+      </div>
+      <div class="violation-count">${v.cnt}</div>
+    </div>`).join('');
+}
+
+function renderTasks(tasks) {
+  const now = new Date();
+  const open = tasks.filter(t=>['new','in_work'].includes(t.status)).length;
+  const pending = tasks.filter(t=>t.status==='pending_confirm').length;
+  const closed = tasks.filter(t=>t.status==='closed').length;
+  const overdue = tasks.filter(t=>t.deadline&&t.status!=='closed'&&new Date(t.deadline)<now).length;
+
+  document.getElementById('taskStatsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-n blue">${open}</div><div class="stat-l">Открытых</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:#7b1fa2">${pending}</div><div class="stat-l">На подтверждении</div></div>
+    <div class="stat-card"><div class="stat-n green">${closed}</div><div class="stat-l">Закрытых</div></div>
+    <div class="stat-card"><div class="stat-n red">${overdue}</div><div class="stat-l">Просроченных</div></div>`;
+
+  // Просроченные
+  const overdueTasks = tasks.filter(t=>t.deadline&&t.status!=='closed'&&new Date(t.deadline)<now)
+    .sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));
+
+  document.getElementById('overdueBody').innerHTML = overdueTasks.length
+    ? overdueTasks.map(t => {
+        const days = Math.floor((now-new Date(t.deadline))/(1000*60*60*24));
+        return `<tr class="overdue-row">
+          <td>${t.store||'—'}</td>
+          <td>${t.text}</td>
+          <td>${t.deadline}</td>
+          <td><span class="badge ${t.status==='pending_confirm'?'pending':'open'}">${
+            t.status==='new'?'Новая':t.status==='in_work'?'В работе':'На подтверждении'
+          }</span></td>
+          <td><span class="badge overdue">+${days} дн.</span></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="5" class="empty">Просроченных задач нет ✅</td></tr>';
+
+  // Все задачи
+  document.getElementById('allTasksBody').innerHTML = tasks.length
+    ? tasks.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).map(t => {
+        const statusLabel = {new:'Новая',in_work:'В работе',pending_confirm:'На подтверждении',closed:'Закрыта'};
+        const statusCls = {new:'open',in_work:'open',pending_confirm:'pending',closed:'closed'};
+        return `<tr>
+          <td>${t.store||'—'}</td>
+          <td>${t.text}</td>
+          <td>${t.deadline||'—'}</td>
+          <td><span class="badge ${statusCls[t.status]||'open'}">${statusLabel[t.status]||t.status}</span></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="4" class="empty">Нет данных</td></tr>';
+}
+
+function switchTab(tab) {
+  const tabs = ['overview','stores','violations','tasks'];
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.className = 'tab' + (tabs[i]===tab?' active':'');
+  });
+  document.querySelectorAll('.section').forEach(s => s.className='section');
+  document.getElementById('tab-'+tab).className = 'section active';
+}
+
+function exportExcel() {
+  if (!allChecksData.length) { alert('Нет данных для выгрузки'); return; }
+
+  let csv = '\uFEFF'; // BOM для Excel
+  csv += 'Дата;Магазин;Дирекция;Филиал;ДГМ;Результат %;Соответствует;Нарушений\n';
+  allChecksData.forEach(c => {
+    const answers = c.answers || {};
+    const yes = Object.values(answers).filter(v=>v==='yes').length;
+    const no = Object.values(answers).filter(v=>v==='no').length;
+    const dt = new Date(c.created_at).toLocaleString('ru-RU');
+    csv += `${dt};${c.store||''};${c.td||''};${c.filial||''};${c.dgm_name||''};${c.score_percent||0};${yes};${no}\n`;
+  });
+
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `585_analytics_${new Date().toLocaleDateString('ru-RU')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function logout() {
+  localStorage.clear();
+  window.location.href = '/';
+}
+
+loadData();
+</script>
+</body>
+</html>
